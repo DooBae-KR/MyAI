@@ -44,7 +44,7 @@ class RoutingAiModelTest {
         RoutingAiModel router = router(log, true);
 
         assertEquals("ollama", router.chat(request(null)).getContent());
-        router.select(new Selection(LlmProvider.CLAUDE, null, null));
+        router.select(new Selection(LlmProvider.CLAUDE, null, null, null));
         assertEquals("claude", router.chat(request(" ")).getContent());
 
         assertEquals("ollama:qwen3:14b;claude:claude-sonnet-5-5;", log.toString());
@@ -54,7 +54,7 @@ class RoutingAiModelTest {
     void usesSelectedModelOverrideButRequestModelWins() {
         StringBuilder log = new StringBuilder();
         RoutingAiModel router = router(log, true);
-        router.select(new Selection(LlmProvider.CLAUDE, "llama3", "claude-opus-5-5"));
+        router.select(new Selection(LlmProvider.CLAUDE, "llama3", "claude-opus-5-5", null));
 
         router.chat(request(null));
         router.chat(request("claude-haiku-4-5-20251001"));
@@ -81,7 +81,7 @@ class RoutingAiModelTest {
         RoutingAiModel router = router(new StringBuilder(), false);
 
         assertFalse(router.isAvailable(LlmProvider.CLAUDE));
-        assertThrows(IllegalArgumentException.class, () -> router.select(new Selection(LlmProvider.CLAUDE, null, null)));
+        assertThrows(IllegalArgumentException.class, () -> router.select(new Selection(LlmProvider.CLAUDE, null, null, null)));
         assertEquals(LlmProvider.OLLAMA, router.selection().provider()); // 실패해도 기존 선택 유지
         assertThrows(IllegalArgumentException.class,
                 () -> new RoutingAiModel(Map.of(LlmProvider.OLLAMA, named("o", new StringBuilder())),

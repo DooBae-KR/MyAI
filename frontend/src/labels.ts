@@ -30,5 +30,7 @@ export const TYPE_LABEL: Record<string, string> = {
 
 export const difficultyDots = (d: number) => '●'.repeat(d) + '○'.repeat(Math.max(0, 5 - d))
 
-export const PROVIDER_LABEL = { OLLAMA: 'Ollama (로컬)', CLAUDE: 'Claude (API)' } as const
+export const PROVIDER_LABEL = { OLLAMA: 'Ollama (로컬)', CLAUDE: 'Claude (API)', CLAUDE_CODE: 'Claude Code (로그인)' } as const
 export const CLAUDE_MODEL_SUGGESTIONS = ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-haiku-4-5-20251001']
+export const CLAUDE_CODE_MODEL_SUGGESTIONS = ['sonnet', 'opus', 'haiku']
+export const modelName = (m: string | null) => m ?? '기본 모델'

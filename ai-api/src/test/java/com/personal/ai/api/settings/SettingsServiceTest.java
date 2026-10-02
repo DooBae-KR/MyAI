@@ -59,7 +59,7 @@ class SettingsServiceTest {
         RoutingAiModel router = router(true, r -> new AiResponse("o"));
         when(repo.findById(SettingsService.KEY)).thenReturn(Optional.empty());
 
-        LlmSettingsResponse s = service(router).update(new UpdateLlmRequest("claude", "  ", " claude-opus-5-5 "));
+        LlmSettingsResponse s = service(router).update(new UpdateLlmRequest("claude", "  ", " claude-opus-5-5 ", null));
 
         assertEquals("CLAUDE", s.provider());
         assertEquals("claude-opus-5-5", s.activeModel());
@@ -77,11 +77,11 @@ class SettingsServiceTest {
         RoutingAiModel withClaude = router(true, r -> new AiResponse("o"));
         SettingsService service = service(withClaude);
 
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> noClaudeService.update(new UpdateLlmRequest("CLAUDE", null, null))));
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("GPT", null, null))));
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest(null, null, null))));
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("OLLAMA", "a b; rm -rf", null))));
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("OLLAMA", "x".repeat(101), null))));
+        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> noClaudeService.update(new UpdateLlmRequest("CLAUDE", null, null, null))));
+        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("GPT", null, null, null))));
+        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest(null, null, null, null))));
+        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("OLLAMA", "a b; rm -rf", null, null))));
+        assertEquals(HttpStatus.BAD_REQUEST, statusOf(() -> service.update(new UpdateLlmRequest("OLLAMA", "x".repeat(101), null, null))));
 
         assertEquals(LlmProvider.OLLAMA, noClaude.selection().provider());
         assertEquals(LlmProvider.OLLAMA, withClaude.selection().provider());
@@ -95,7 +95,7 @@ class SettingsServiceTest {
         when(repo.save(any())).thenThrow(new IllegalStateException("db down"));
 
         assertThrows(IllegalStateException.class,
-                () -> service(router).update(new UpdateLlmRequest("CLAUDE", null, null)));
+                () -> service(router).update(new UpdateLlmRequest("CLAUDE", null, null, null)));
 
         assertEquals(LlmProvider.OLLAMA, router.selection().provider());
     }
@@ -123,7 +123,7 @@ class SettingsServiceTest {
     @Test
     void testReportsSuccessWithReplyAndModel() {
         RoutingAiModel router = router(true, r -> new AiResponse("o"));
-        router.select(new RoutingAiModel.Selection(LlmProvider.CLAUDE, null, "claude-opus-5-5"));
+        router.select(new RoutingAiModel.Selection(LlmProvider.CLAUDE, null, "claude-opus-5-5", null));
 
         LlmTestResponse result = service(router).test();
 
@@ -144,5 +144,28 @@ class SettingsServiceTest {
         assertEquals("OLLAMA", result.provider());
         assertTrue(result.message().contains("Connection refused"));
         assertNull(result.reply());
+    }
+
+    @Test
+    void claudeCodeCanBeSelectedOnlyWhenTheCliIsInstalled() {
+        Map<LlmProvider, AiModel> models = new EnumMap<>(LlmProvider.class);
+        models.put(LlmProvider.OLLAMA, r -> new AiResponse("o"));
+        models.put(LlmProvider.CLAUDE_CODE, r -> new AiResponse("확인 (" + r.getModel() + ")"));
+        RoutingAiModel withCli = new RoutingAiModel(models, LlmProvider.OLLAMA, "qwen3:14b", "claude-sonnet-5-5");
+        when(repo.findById(SettingsService.KEY)).thenReturn(Optional.empty());
+
+        LlmSettingsResponse s = service(withCli).update(new UpdateLlmRequest("CLAUDE_CODE", null, null, " opus "));
+
+        assertEquals("CLAUDE_CODE", s.provider());
+        assertTrue(s.claudeCodeAvailable());
+        assertFalse(s.claudeAvailable());
+        assertEquals("opus", s.activeModel());
+        assertEquals("확인 (opus)", service(withCli).test().reply());
+
+        RoutingAiModel withoutCli = router(true, r -> new AiResponse("o"));
+        ResponseStatusException e = assertThrows(ResponseStatusException.class,
+                () -> service(withoutCli).update(new UpdateLlmRequest("CLAUDE_CODE", null, null, null)));
+        assertTrue(e.getReason().contains("claude"));
+        assertFalse(service(withoutCli).get().claudeCodeAvailable());
     }
 }

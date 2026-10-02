@@ -1,6 +1,6 @@
 import { fetchGoal, fetchGoals, fetchLlmSettings, type GoalDetail, type GoalSummary } from './api'
 import { useHashRoute, useLoad } from './hooks'
-import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, scoreTone } from './labels'
+import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
 import { NextActionPanel } from './NextActionPanel'
 import { SettingsPage } from './SettingsPage'
@@ -15,7 +15,7 @@ export default function App() {
         <span className="muted">학습 Dashboard</span>
         <nav className="spacer">
           <a href="#/settings" className="llm-badge" aria-label="LLM 설정">
-            {llm.data ? `${PROVIDER_LABEL[llm.data.provider]} · ${llm.data.activeModel}` : '설정'}
+            {llm.data ? `${PROVIDER_LABEL[llm.data.provider]} · ${modelName(llm.data.activeModel)}` : '설정'}
           </a>
         </nav>
       </header>

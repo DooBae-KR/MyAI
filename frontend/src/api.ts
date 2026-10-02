@@ -99,28 +99,30 @@ export const submitAnswers = (assessmentId: number, answers: { questionId: numbe
   post<{ result: GradingResult }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
 export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)
 
-export type Provider = 'OLLAMA' | 'CLAUDE'
+export type Provider = 'OLLAMA' | 'CLAUDE' | 'CLAUDE_CODE'
 
 export interface LlmSettings {
   provider: Provider
   ollamaModel: string | null
   claudeModel: string | null
-  activeModel: string
+  claudeCodeModel: string | null
+  activeModel: string | null // Claude Code는 모델을 지정하지 않으면 null(= CLI 기본 모델)
   claudeAvailable: boolean
+  claudeCodeAvailable: boolean
   defaults: { ollamaModel: string; claudeModel: string }
 }
 
 export interface LlmTestResult {
   ok: boolean
   provider: Provider
-  model: string
+  model: string | null
   elapsedMs: number
   reply: string | null
   message: string | null
 }
 
 export const fetchLlmSettings = () => request<LlmSettings>('/api/settings/llm')
-export const updateLlmSettings = (body: { provider: Provider; ollamaModel: string; claudeModel: string }) =>
+export const updateLlmSettings = (body: { provider: Provider; ollamaModel: string; claudeModel: string; claudeCodeModel: string }) =>
   request<LlmSettings>('/api/settings/llm', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

@@ -50,8 +50,8 @@ public class SettingsService {
 
     public LlmSettingsResponse get() {
         Selection s = router.selection();
-        return new LlmSettingsResponse(s.provider().name(), s.ollamaModel(), s.claudeModel(), router.effectiveModel(s),
-                router.isAvailable(LlmProvider.CLAUDE),
+        return new LlmSettingsResponse(s.provider().name(), s.ollamaModel(), s.claudeModel(), s.claudeCodeModel(),
+                router.effectiveModel(s), router.isAvailable(LlmProvider.CLAUDE), router.isAvailable(LlmProvider.CLAUDE_CODE),
                 new LlmSettingsResponse.Defaults(router.defaultModel(LlmProvider.OLLAMA), router.defaultModel(LlmProvider.CLAUDE)));
     }
 
@@ -60,12 +60,15 @@ public class SettingsService {
         try {
             provider = LlmProvider.valueOf(String.valueOf(request.provider()).trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw badRequest("provider는 OLLAMA 또는 CLAUDE여야 합니다.");
+            throw badRequest("provider는 OLLAMA, CLAUDE, CLAUDE_CODE 중 하나여야 합니다.");
         }
         if (!router.isAvailable(provider)) {
-            throw badRequest("Claude API 키가 설정되지 않아 Claude를 선택할 수 없습니다. .env의 ANTHROPIC_API_KEY를 설정하고 앱을 다시 시작하세요.");
+            throw badRequest(provider == LlmProvider.CLAUDE_CODE
+                    ? "Claude Code CLI(claude)를 찾을 수 없어 선택할 수 없습니다. 설치하고 터미널에서 claude 로 로그인한 뒤 앱을 다시 시작하세요."
+                    : "Claude API 키가 설정되지 않아 Claude를 선택할 수 없습니다. .env의 ANTHROPIC_API_KEY를 설정하고 앱을 다시 시작하세요.");
         }
-        Selection next = new Selection(provider, modelName(request.ollamaModel()), modelName(request.claudeModel()));
+        Selection next = new Selection(provider, modelName(request.ollamaModel()), modelName(request.claudeModel()),
+                modelName(request.claudeCodeModel()));
 
         try {
             String json = mapper.writeValueAsString(next);

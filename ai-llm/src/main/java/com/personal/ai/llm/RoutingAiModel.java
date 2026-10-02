@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RoutingAiModel implements AiModel {
 
-    /** 모델 이름이 null이면 기본 모델을 쓴다. */
-    public record Selection(LlmProvider provider, String ollamaModel, String claudeModel) {}
+    /** 모델 이름이 null이면 기본 모델을 쓴다(Claude Code는 CLI 기본 모델). */
+    public record Selection(LlmProvider provider, String ollamaModel, String claudeModel, String claudeCodeModel) {}
 
     private final Map<LlmProvider, AiModel> models;
     private final Map<LlmProvider, String> defaultModels = new EnumMap<>(LlmProvider.class);
@@ -30,7 +30,8 @@ public class RoutingAiModel implements AiModel {
         this.models = new EnumMap<>(models);
         this.defaultModels.put(LlmProvider.OLLAMA, defaultOllamaModel);
         this.defaultModels.put(LlmProvider.CLAUDE, defaultClaudeModel);
-        this.selection = new AtomicReference<>(new Selection(initial, null, null));
+        this.defaultModels.put(LlmProvider.CLAUDE_CODE, null); // null이면 CLI의 기본 모델
+        this.selection = new AtomicReference<>(new Selection(initial, null, null, null));
     }
 
     public Selection selection() {
@@ -47,7 +48,11 @@ public class RoutingAiModel implements AiModel {
 
     /** 선택한 provider에서 실제로 쓰일 모델 이름. */
     public String effectiveModel(Selection s) {
-        String override = s.provider() == LlmProvider.CLAUDE ? s.claudeModel() : s.ollamaModel();
+        String override = switch (s.provider()) {
+            case CLAUDE -> s.claudeModel();
+            case CLAUDE_CODE -> s.claudeCodeModel();
+            case OLLAMA -> s.ollamaModel();
+        };
         return override != null ? override : defaultModels.get(s.provider());
     }
 

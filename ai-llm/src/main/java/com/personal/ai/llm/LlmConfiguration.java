@@ -5,6 +5,8 @@ import com.personal.ai.core.model.LlmProvider;
 import com.personal.ai.llm.claude.ClaudeAiModel;
 import com.personal.ai.llm.ollama.OllamaAiModel;
 import com.personal.ai.llm.claude.ClaudeProperties;
+import com.personal.ai.llm.claudecode.ClaudeCodeAiModel;
+import com.personal.ai.llm.claudecode.ClaudeCodeProperties;
 
 import com.personal.ai.llm.ollama.OllamaProperties;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,11 +23,11 @@ import java.util.Map;
  * 이후에는 설정 화면의 선택(DB 저장)이 이를 덮어쓴다.
  */
 @Configuration
-@EnableConfigurationProperties({OllamaProperties.class, ClaudeProperties.class})
+@EnableConfigurationProperties({OllamaProperties.class, ClaudeProperties.class, ClaudeCodeProperties.class})
 public class LlmConfiguration {
 
     @Bean
-    public RoutingAiModel aiModel(OllamaProperties ollama, ClaudeProperties claude,
+    public RoutingAiModel aiModel(OllamaProperties ollama, ClaudeProperties claude, ClaudeCodeProperties claudeCode,
                                   @Value("${ai.provider:ollama}") String provider) {
         Map<LlmProvider, AiModel> models = new EnumMap<>(LlmProvider.class);
         models.put(LlmProvider.OLLAMA, new OllamaAiModel(
@@ -38,10 +40,15 @@ public class LlmConfiguration {
                     .build(), claude));
         }
 
-        LlmProvider initial = LlmProvider.valueOf(provider.trim().toUpperCase());
+        if (ClaudeCodeAiModel.isInstalled(claudeCode)) {
+            models.put(LlmProvider.CLAUDE_CODE, new ClaudeCodeAiModel(claudeCode));
+        }
+
+        LlmProvider initial = LlmProvider.valueOf(provider.trim().toUpperCase().replace('-', '_'));
         if (!models.containsKey(initial)) {
-            throw new IllegalStateException(
-                    "ai.provider=claude 이지만 ANTHROPIC_API_KEY(claude.api-key)가 설정되지 않았습니다.");
+            throw new IllegalStateException(initial == LlmProvider.CLAUDE_CODE
+                    ? "ai.provider=claude-code 이지만 Claude Code CLI(claude)를 찾을 수 없습니다."
+                    : "ai.provider=claude 이지만 ANTHROPIC_API_KEY(claude.api-key)가 설정되지 않았습니다.");
         }
         return new RoutingAiModel(models, initial, ollama.getModel(), claude.getModel());
     }

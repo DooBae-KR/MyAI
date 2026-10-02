@@ -184,16 +184,37 @@ npm run dev                 # http://localhost:5173  (백엔드를 먼저 실행
 
 ## 설정: LLM 선택
 
-대시보드 오른쪽 위의 모델 표시(또는 `#/settings`)에서 **Ollama(로컬)와 Claude(API)를 앱 재시작 없이** 바꿀 수 있습니다.
+대시보드 오른쪽 위의 모델 표시(또는 `#/settings`)에서 **Ollama(로컬), Claude(API), Claude Code(로그인)를 앱 재시작 없이** 바꿀 수 있습니다.
 진단 문제 생성, 채점, 커리큘럼 생성, MCP가 모두 선택한 모델로 동작합니다. 모델 이름도 지정할 수 있고(비우면 기본값),
 "연결 테스트"로 키와 모델이 동작하는지 바로 확인할 수 있습니다. 선택은 DB(`app_setting`)에 저장되어 재시작 후에도 유지됩니다.
 
 ```http
 GET  /api/settings/llm         현재 선택, 기본 모델, Claude 사용 가능 여부
-PUT  /api/settings/llm         { "provider": "CLAUDE", "ollamaModel": "", "claudeModel": "claude-opus-5-5" }
+PUT  /api/settings/llm         { "provider": "CLAUDE_CODE", "ollamaModel": "", "claudeModel": "", "claudeCodeModel": "sonnet" }
 POST /api/settings/llm/test    현재 선택으로 짧은 호출을 보내 확인 (실패해도 200, ok=false와 사유)
 ```
 
 - **API 키는 화면에서 입력하지 않습니다.** `.env`의 `ANTHROPIC_API_KEY`로만 설정합니다. 비었거나 자리표시자(공백이나 한글이 섞인 값)면 "키 없음"으로 보고 Claude 선택을 막습니다.
 - `AI_PROVIDER`는 처음 시작할 때의 기본 선택이고, 저장된 선택이 있으면 그것이 우선합니다. 저장된 선택이 Claude인데 키가 사라졌다면 무시하고 Ollama로 시작합니다.
+- **Claude Code(로그인)** 는 API 키 대신 이 PC의 Claude Code(`claude`) 로그인으로 호출합니다. 앱이 시작할 때 `claude`를 찾으면 선택할 수 있습니다. 모델은 `sonnet`, `opus` 같은 별칭이나 전체 이름이고, 비우면 Claude Code의 기본 모델을 씁니다.
+  채점 답변 같은 사용자 입력이 프롬프트에 들어가므로 모델이 이 PC에서 아무것도 하지 못하게 막습니다: 도구 전부 차단, MCP 비활성, 빈 임시 폴더에서 실행, 프롬프트는 인자가 아닌 표준입력으로 전달.
+  환경변수의 `ANTHROPIC_API_KEY`는 이 호출에서만 제거합니다(남아 있으면 로그인 대신 API 키가 쓰여 과금됩니다). `claude`가 PATH에 없으면 `CLAUDE_CODE_COMMAND`로 경로를 지정하고, 응답 제한 시간은 `CLAUDE_CODE_TIMEOUTSECONDS`(기본 180)입니다.
 - Claude 호출은 비용이 듭니다. `/api` 엔드포인트는 인증이 없으니 외부에 노출하지 마세요.
+
+## 카페 등 다른 PC(노트북)에서 사용하기
+
+Ollama가 없는 노트북에서는 **Claude Code 로그인**으로 쓰는 것이 가장 간단합니다. DB는 Supabase(클라우드)라서 어디서든 같은 데이터를 봅니다.
+
+1. 준비: Git, Java 21, Node.js, Claude Code를 설치합니다.
+2. 코드 받기: `git clone`(이미 있다면 `git pull`) 후 `claude/gifted-cerf-fpf6ol` 브랜치로 맞춥니다.
+3. `.env` 만들기: **`.env`는 Git에 없으므로 노트북에서 새로 만듭니다.** DB 접속 값(`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`)만 있으면 됩니다. Claude 키나 Ollama 설정은 필요 없습니다.
+4. 화면 빌드: `cd frontend && npm install && npm run build:spring`
+5. 로그인: 터미널에서 `claude`를 실행해 브라우저로 로그인합니다(한 번만).
+6. 앱 실행 후 `http://localhost:8080` → 설정 → **Claude Code (로그인)** 선택 → 저장 → **연결 테스트**.
+   처음부터 기본으로 쓰려면 `AI_PROVIDER=claude-code`를 `.env`에 둡니다(없으면 Ollama로 시작).
+
+주의
+- **공용 Wi-Fi에서는 DB 포트(5432)가 막힐 수 있습니다.** 접속이 안 되면 휴대폰 핫스팟을 쓰거나 `Test-NetConnection <호스트> -Port 5432`로 확인하고, 막혀 있으면 포트 6543을 시도하세요.
+- **`SERVER_ADDRESS=0.0.0.0`으로 바꾸지 마세요.** 기본값(`127.0.0.1`)이어야 같은 Wi-Fi의 다른 사람이 이 서버에 접속하지 못합니다. `/api`에는 인증이 없습니다.
+- Claude Code 로그인으로 쓰면 Claude 구독의 사용량 한도가 소모됩니다. 본인 PC에서 본인이 쓰는 용도로만 사용하고, 약관은 직접 확인하세요.
+- 로그인이 안 되어 있으면 연결 테스트가 "터미널에서 claude 를 실행해 로그인하세요"라고 안내합니다.

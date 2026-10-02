@@ -2,6 +2,7 @@ package com.personal.ai.llm;
 
 import com.personal.ai.core.model.LlmProvider;
 import com.personal.ai.llm.claude.ClaudeProperties;
+import com.personal.ai.llm.claudecode.ClaudeCodeProperties;
 import com.personal.ai.llm.ollama.OllamaProperties;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,9 @@ class LlmConfigurationTest {
     private RoutingAiModel build(String apiKey, String provider) {
         ClaudeProperties claude = new ClaudeProperties();
         claude.setApiKey(apiKey);
-        return new LlmConfiguration().aiModel(new OllamaProperties(), claude, provider);
+        ClaudeCodeProperties claudeCode = new ClaudeCodeProperties();
+        claudeCode.setCommand("personal-ai-test-no-such-cli"); // 이 PC에 있는 진짜 claude의 영향을 받지 않게 한다
+        return new LlmConfiguration().aiModel(new OllamaProperties(), claude, claudeCode, provider);
     }
 
     @Test
@@ -35,5 +38,11 @@ class LlmConfigurationTest {
         assertThrows(IllegalStateException.class, () -> build("여기에_API_키를_입력하세요", "claude"));
         assertEquals(LlmProvider.CLAUDE, build("sk-ant-abc", "Claude").selection().provider());
         assertEquals(LlmProvider.OLLAMA, build("", " OLLAMA ").selection().provider());
+    }
+
+    @Test
+    void claudeCodeIsAvailableOnlyWhenTheCliExists() {
+        assertFalse(build("", "ollama").isAvailable(LlmProvider.CLAUDE_CODE));
+        assertThrows(IllegalStateException.class, () -> build("", "claude-code"));
     }
 }
