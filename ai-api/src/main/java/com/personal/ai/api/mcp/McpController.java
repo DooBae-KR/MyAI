@@ -3,6 +3,8 @@ package com.personal.ai.api.mcp;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.personal.ai.api.service.AiService;
 import com.personal.ai.core.model.AiRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import java.util.Map;
 @RestController
 public class McpController {
 
+    private static final Logger log = LoggerFactory.getLogger(McpController.class);
     private static final String TOOL = "ask_assistant";
 
     private final AiService aiService;
@@ -27,6 +30,9 @@ public class McpController {
     public McpController(AiService aiService, @Value("${mcp.token:}") String token) {
         this.aiService = aiService;
         this.token = token;
+        if (token.isBlank()) {
+            log.warn("MCP_TOKEN이 비어 있어 /mcp에 인증이 없습니다. 이 서버가 내 PC 밖에서 접근 가능하다면 누구나 LLM(비용)을 호출할 수 있으니 MCP_TOKEN을 설정하세요.");
+        }
     }
 
     @PostMapping("/mcp")

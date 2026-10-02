@@ -1,7 +1,9 @@
 server:
   port: 8080
+  # 기본은 내 PC에서만 접속 가능. /api에는 인증이 없으니 다른 PC에서 접속해야 할 때만 SERVER_ADDRESS=0.0.0.0 으로 바꿀 것
+  address: ${SERVER_ADDRESS:127.0.0.1}
   error:
-    include-message: always   # 400/404/502 등의 사유를 응답 본문에 포함
+    include-message: never   # 예상 못 한 예외의 상세 메시지는 숨긴다. 예상한 오류는 ApiExceptionHandler가 message를 준다
   servlet:
     encoding:
       charset: UTF-8
