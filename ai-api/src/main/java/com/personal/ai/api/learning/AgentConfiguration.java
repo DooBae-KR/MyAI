@@ -1,5 +1,6 @@
 package com.personal.ai.api.learning;
 
+import com.personal.ai.agent.codingtest.CodingTestAgent;
 import com.personal.ai.agent.curriculum.CurriculumAgent;
 import com.personal.ai.agent.evaluator.EvaluatorAgent;
 import com.personal.ai.agent.pattern.PatternAnalyzerAgent;
@@ -23,5 +24,10 @@ public class AgentConfiguration {
     @Bean
     public PatternAnalyzerAgent patternAnalyzerAgent(AiModel aiModel) {
         return new PatternAnalyzerAgent(aiModel);
+    }
+
+    @Bean
+    public CodingTestAgent codingTestAgent(AiModel aiModel) {
+        return new CodingTestAgent(aiModel);
     }
 }

@@ -163,3 +163,71 @@ export const updatePattern = (id: number, status: 'DISMISSED' | 'HYPOTHESIS') =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   })
+
+export interface CodingProblemSummary {
+  id: number
+  title: string
+  source: string | null
+  difficulty: string | null
+  category: string | null
+  algorithm: string | null
+  dataStructure: string | null
+  language: string | null
+  estimatedTime: number | null
+  hasLecture: boolean
+  submissionCount: number
+}
+
+export interface LectureSection { no: number; title: string; body: string }
+export interface Lecture { promptVersion: string; assumptions: string[]; sections: LectureSection[] }
+
+export interface Comparison { item: string; mine: string; recommended: string; status: 'SAME' | 'DIFFERENT' | 'UNKNOWN'; reason: string }
+export interface Review {
+  promptVersion: string
+  userApproach: string
+  recommendedApproach: string
+  comparisons: Comparison[]
+  mistakes: string[]
+  nextSteps: string[]
+  similarProblems: string[]
+  summary: string
+}
+export interface Submission { id: number; language: string; code: string; explanation: string | null; review: Review | null; createdAt: string }
+
+export interface CodingProblemDetail {
+  id: number
+  title: string
+  source: string | null
+  sourceUrl: string | null
+  externalId: string | null
+  company: string | null
+  difficulty: string | null
+  category: string | null
+  algorithm: string | null
+  dataStructure: string | null
+  language: string | null
+  summary: string | null
+  estimatedTime: number | null
+  lecture: Lecture | null
+  submissions: Submission[]
+}
+
+export interface NewCodingProblem {
+  title: string
+  source?: string
+  sourceUrl?: string
+  difficulty?: string
+  category?: string
+  algorithm?: string
+  dataStructure?: string
+  language?: string
+  summary?: string
+  estimatedTime?: number
+}
+
+export const fetchProblems = () => request<CodingProblemSummary[]>('/api/coding/problems')
+export const fetchProblem = (id: number) => request<CodingProblemDetail>(`/api/coding/problems/${id}`)
+export const createProblem = (p: NewCodingProblem) => post<CodingProblemDetail>('/api/coding/problems', p)
+export const createLecture = (id: number) => post<Lecture>(`/api/coding/problems/${id}/lecture`)
+export const submitSolution = (id: number, body: { language: string; code: string; explanation: string }) =>
+  post<Submission>(`/api/coding/problems/${id}/submissions`, body)
