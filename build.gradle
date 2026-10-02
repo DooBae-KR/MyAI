@@ -18,8 +18,13 @@ subprojects {
         toolchain { languageVersion = JavaLanguageVersion.of(21) }
     }
 
+    dependencyManagement {
+        imports { mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.5' }
+    }
+
     dependencies {
         testImplementation 'org.springframework.boot:spring-boot-starter-test:3.5.5'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // Gradle 9는 런처를 직접 요구한다
     }
 
     tasks.named('test') { useJUnitPlatform() }

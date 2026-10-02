@@ -90,3 +90,16 @@ DB_PASSWORD=<비밀번호>
 ```
 
 테이블은 `personal_ai` 스키마에 Flyway(`ai-data/src/main/resources/db/migration`)로 생성됩니다.
+
+## 학습 API
+
+```http
+POST /api/learning/subjects
+Content-Type: application/json
+
+{ "subject": "Vue", "goal": "실무 수준까지 배우기" }
+```
+
+선택 필드: `targetLevel`(`BEGINNER|INTERMEDIATE|ADVANCED`), `deadline`(`2026-12-31`).
+같은 이름의 분야는 대소문자 구분 없이 재사용하고 목표만 새로 등록합니다. 응답은 `201`과
+`{ "subjectId", "subject", "goalId", "goal" }`, `subject`나 `goal`이 비면 `400`입니다.
