@@ -28,6 +28,9 @@ public class LearningAnswer {
     @JdbcTypeCode(SqlTypes.JSON)
     private String scores;
 
+    /** 사고 패턴 분석에 쓰인 시각. null이면 아직 분석 전. */
+    private LocalDateTime analyzedAt;
+
     @Column(insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -45,5 +48,7 @@ public class LearningAnswer {
     public String getAnswerText() { return answerText; }
     public String getScores() { return scores; }
     public void setScores(String scores) { this.scores = scores; }
+    public LocalDateTime getAnalyzedAt() { return analyzedAt; }
+    public void markAnalyzed() { this.analyzedAt = LocalDateTime.now(); }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
