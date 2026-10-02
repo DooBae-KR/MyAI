@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.personal.ai.agent.CurriculumAgentTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-02T05:54:56.709Z" hostname="vm" time="0.051">
-  <properties/>
-  <testcase name="retriesOnceThenFailsOnInvalidSteps()" classname="com.personal.ai.agent.CurriculumAgentTest" time="0.035"/>
-  <testcase name="recoversWhenSecondAttemptIsValid()" classname="com.personal.ai.agent.CurriculumAgentTest" time="0.005"/>
-  <testcase name="parsesStepsNumbersThemAndSendsDiagnosisToModel()" classname="com.personal.ai.agent.CurriculumAgentTest" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -98,3 +98,32 @@ export const createDiagnostic = (goalId: number) => post<unknown>(`/api/learning
 export const submitAnswers = (assessmentId: number, answers: { questionId: number; answer: string }[]) =>
   post<{ result: GradingResult }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
 export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)
+
+export type Provider = 'OLLAMA' | 'CLAUDE'
+
+export interface LlmSettings {
+  provider: Provider
+  ollamaModel: string | null
+  claudeModel: string | null
+  activeModel: string
+  claudeAvailable: boolean
+  defaults: { ollamaModel: string; claudeModel: string }
+}
+
+export interface LlmTestResult {
+  ok: boolean
+  provider: Provider
+  model: string
+  elapsedMs: number
+  reply: string | null
+  message: string | null
+}
+
+export const fetchLlmSettings = () => request<LlmSettings>('/api/settings/llm')
+export const updateLlmSettings = (body: { provider: Provider; ollamaModel: string; claudeModel: string }) =>
+  request<LlmSettings>('/api/settings/llm', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+export const testLlm = () => post<LlmTestResult>('/api/settings/llm/test')

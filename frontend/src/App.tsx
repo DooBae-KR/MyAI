@@ -1,18 +1,29 @@
-import { fetchGoal, fetchGoals, type GoalDetail, type GoalSummary } from './api'
+import { fetchGoal, fetchGoals, fetchLlmSettings, type GoalDetail, type GoalSummary } from './api'
 import { useHashRoute, useLoad } from './hooks'
-import { LEVEL_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, scoreTone } from './labels'
+import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
 import { NextActionPanel } from './NextActionPanel'
+import { SettingsPage } from './SettingsPage'
 
 export default function App() {
-  const goalId = useHashRoute()
+  const route = useHashRoute()
+  const llm = useLoad(fetchLlmSettings, 'llm')
   return (
     <>
       <header className="top">
         <a href="#/" className="brand">Personal AI</a>
         <span className="muted">학습 Dashboard</span>
+        <nav className="spacer">
+          <a href="#/settings" className="llm-badge" aria-label="LLM 설정">
+            {llm.data ? `${PROVIDER_LABEL[llm.data.provider]} · ${llm.data.activeModel}` : '설정'}
+          </a>
+        </nav>
       </header>
-      <main>{goalId === null ? <GoalList /> : <GoalPage goalId={goalId} />}</main>
+      <main>
+        {route.page === 'settings' && <SettingsPage onSaved={llm.reload} />}
+        {route.page === 'goal' && <GoalPage goalId={route.goalId} />}
+        {route.page === 'list' && <GoalList />}
+      </main>
     </>
   )
 }

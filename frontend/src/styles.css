@@ -77,3 +77,15 @@ textarea { resize: vertical; }
 .score-chip { font-size: .8rem; padding: 2px 10px; border-radius: 99px; color: #fff; font-weight: 600; }
 .score-chip.weak { background: var(--weak); } .score-chip.mid { background: var(--mid); } .score-chip.strong { background: var(--strong); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+button:not(.primary) { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px 16px; }
+button:not(.primary):disabled { opacity: .5; cursor: not-allowed; }
+.top .spacer { margin-left: auto; }
+.llm-badge { font-size: .82rem; padding: 3px 10px; border: 1px solid var(--border); border-radius: 99px; color: var(--muted); text-decoration: none; background: var(--surface); white-space: nowrap; }
+.llm-badge:hover, .llm-badge:focus-visible { border-color: var(--accent); color: var(--accent); }
+.providers { border: 0; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
+.provider { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; cursor: pointer; }
+.provider.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.provider.off { opacity: .6; cursor: not-allowed; }
+.provider input { width: auto; margin-top: 4px; }
+.ok-msg { background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border: 1px solid var(--ok); padding: 10px 14px; border-radius: 8px; margin: 4px 0; }
+@media (max-width: 520px) { .top { flex-wrap: wrap; } .top .muted { display: none; } }

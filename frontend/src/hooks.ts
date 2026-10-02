@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 
-/** '#/' 는 목록, '#/goals/3' 는 상세. 화면이 둘뿐이라 라우터 라이브러리 없이 해시로 나눈다. */
-export function useHashRoute(): number | null {
-  const parse = () => {
-    const m = location.hash.match(/^#\/goals\/(\d+)$/)
-    return m ? Number(m[1]) : null
+export type Route = { page: 'list' } | { page: 'goal'; goalId: number } | { page: 'settings' }
+
+/** '#/' 목록, '#/goals/3' 상세, '#/settings' 설정. 화면이 몇 개 안 돼 라우터 라이브러리 없이 해시로 나눈다. */
+export function useHashRoute(): Route {
+  const parse = (): Route => {
+    const goal = location.hash.match(/^#\/goals\/(\d+)$/)
+    if (goal) return { page: 'goal', goalId: Number(goal[1]) }
+    return location.hash === '#/settings' ? { page: 'settings' } : { page: 'list' }
   }
-  const [goalId, setGoalId] = useState(parse)
+  const [route, setRoute] = useState(parse)
   useEffect(() => {
-    const onChange = () => setGoalId(parse())
+    const onChange = () => setRoute(parse())
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)
   }, [])
-  return goalId
+  return route
 }
 
 /** 조회 상태(로딩/오류/데이터). key가 바뀌면 비우고 다시 읽고, reload()는 화면을 비우지 않고 다시 읽는다. */

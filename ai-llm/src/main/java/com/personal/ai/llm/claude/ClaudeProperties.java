@@ -8,7 +8,7 @@ public class ClaudeProperties {
     private String apiKey = "";
     private String model = "claude-sonnet-5-5";
     private String anthropicVersion = "2023-06-01";
-    private int maxTokens = 4096;
+    private int maxTokens = 8192; // 커리큘럼·채점 JSON은 길 수 있어 넉넉히 둔다
 
     public String getBaseUrl() { return baseUrl; }
     public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
