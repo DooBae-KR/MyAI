@@ -17,3 +17,7 @@ ai:
 claude:
   api-key: ${ANTHROPIC_API_KEY:}
   model: ${CLAUDE_MODEL:claude-sonnet-5-5}
+
+mcp:
+  # 비어 있으면 인증 없음. 외부에 노출하면 반드시 설정 (Authorization: Bearer <값>)
+  token: ${MCP_TOKEN:}
