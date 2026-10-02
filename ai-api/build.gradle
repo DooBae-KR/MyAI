@@ -3,5 +3,6 @@ plugins { id 'org.springframework.boot' }
 dependencies {
     implementation project(':ai-core')
     implementation project(':ai-llm')
+    implementation project(':ai-data')
     implementation 'org.springframework.boot:spring-boot-starter-web'
 }

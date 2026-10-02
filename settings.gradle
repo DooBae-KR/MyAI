@@ -2,4 +2,5 @@ rootProject.name = 'personal-ai'
 
 include 'ai-core'
 include 'ai-llm'
+include 'ai-data'
 include 'ai-api'

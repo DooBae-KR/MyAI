@@ -72,7 +72,7 @@ ai-api     com.personal.ai.api.learning    Controller / Service / DTO
 
 - 테이블/컬럼 접두어로 예약어 회피: `LEARNING_*`, `difficulty_level` (`USER`, `LEVEL`, `SESSION`, `COMMENT` 금지)
 - ID는 `GENERATED ALWAYS AS IDENTITY`, boolean은 `BOOLEAN`, 구조화 응답은 네이티브 `JSON`, 긴 텍스트는 `CLOB`
-- 스키마는 Flyway만으로 변경 (`spring.jpa.hibernate.ddl-auto=validate`)
+- 스키마는 Flyway만으로 변경 (`ddl-auto=none`). `validate`는 Oracle `NUMBER`/`JSON` 타입 비교에서 오탐할 수 있어 쓰지 않고, 매핑은 Testcontainers 통합 테스트가 검증한다
 - 통합 테스트는 Testcontainers `gvenzl/oracle-free:23-slim`
 
 ## 7. Agent / Prompt 규칙 (Step 5 대비)
