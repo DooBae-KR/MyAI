@@ -2,6 +2,8 @@ package com.personal.ai.data.learning;
 
 import com.personal.ai.core.learning.StepStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +34,10 @@ public class LearningStep {
     @Column(nullable = false, length = 30)
     private StepStatus status;
 
+    /** estimatedMinutes, practiceTasks 등 Step 상세 JSON. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String detail;
+
     @Column(insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -39,13 +45,14 @@ public class LearningStep {
 
     /** 첫 Step만 AVAILABLE, 나머지는 LOCKED로 시작하는 것은 서비스의 책임이다. */
     public LearningStep(LearningGoal goal, int seq, String title, String objective,
-                        Integer difficulty, StepStatus status) {
+                        Integer difficulty, StepStatus status, String detail) {
         this.goal = goal;
         this.seq = seq;
         this.title = title;
         this.objective = objective;
         this.difficulty = difficulty;
         this.status = status;
+        this.detail = detail;
     }
 
     public Long getId() { return id; }
@@ -54,6 +61,7 @@ public class LearningStep {
     public String getTitle() { return title; }
     public String getObjective() { return objective; }
     public Integer getDifficulty() { return difficulty; }
+    public String getDetail() { return detail; }
     public StepStatus getStatus() { return status; }
     public void setStatus(StepStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

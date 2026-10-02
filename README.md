@@ -112,3 +112,25 @@ POST /api/learning/goals/{goalId}/diagnostic
 `{ "assessmentId", "goalId", "quiz": { "promptVersion", "questions": [...] } }`입니다.
 목표가 없으면 `404`, 모델 응답이 형식을 두 번 어기면 `502`, LLM에 연결할 수 없으면 `503`입니다.
 프롬프트는 `ai-agent/src/main/resources/prompts/`에 있고 `promptVersion`이 결과와 함께 저장됩니다.
+
+```http
+POST /api/learning/assessments/{assessmentId}/answers
+Content-Type: application/json
+
+{ "answers": [ { "questionId": 1, "answer": "..." }, { "questionId": 2, "answer": "..." } ] }
+```
+
+진단 답변을 제출하면 LLM이 문제별 점수와 피드백, 정성 평가(`criteria`), 강점/약점을 만들고,
+**정답률(난이도 가중), 영역별 점수, 수준(`BEGINNER` < 40 ≤ `INTERMEDIATE` < 75 ≤ `ADVANCED`)은 코드가 계산**합니다.
+결과는 진단에 저장되고 목표의 `currentLevel`이 갱신됩니다. 응답은 `201`과 `{ "assessmentId", "result" }`입니다.
+- 비어 있는 답변과 생략한 문제는 `0점(미응답)`이며 LLM에는 보내지 않습니다. 답변은 문제당 4000자까지입니다.
+- 존재하지 않는 `questionId`, 중복, 채점할 답변 없음은 `400`, 이미 채점된 진단은 `409`입니다.
+- 모델 오류(`502`/`503`)로 실패하면 아무것도 저장되지 않아 같은 제출을 다시 보낼 수 있습니다.
+
+```http
+POST /api/learning/goals/{goalId}/curriculum
+```
+
+채점된 진단 결과(약한 영역 집중, 강한 영역 압축)로 개인 커리큘럼을 만듭니다. 응답은 `201`과
+`{ "goalId", "promptVersion", "steps": [ { id, seq, title, objective, difficulty, estimatedMinutes, practiceTasks, status } ] }`이고,
+첫 Step만 `AVAILABLE`, 나머지는 `LOCKED`입니다. 목표당 한 번만 만들 수 있고(`409`), 채점된 진단이 없어도 `409`입니다.

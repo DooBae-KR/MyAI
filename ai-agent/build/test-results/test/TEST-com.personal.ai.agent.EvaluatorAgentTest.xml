@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.personal.ai.agent.EvaluatorAgentTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-02T05:48:04.808Z" hostname="vm" time="0.174">
+<testsuite name="com.personal.ai.agent.EvaluatorAgentTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-02T05:54:56.454Z" hostname="vm" time="0.252">
   <properties/>
-  <testcase name="parsesFencedThinkingResponseAndNumbersQuestions()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.133"/>
-  <testcase name="rejectsOutOfRangeDifficultyAndUnknownType()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.01"/>
-  <testcase name="failsAfterSecondInvalidResponse()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.003"/>
+  <testcase name="parsesFencedThinkingResponseAndNumbersQuestions()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.162"/>
+  <testcase name="rejectsOutOfRangeDifficultyAndUnknownType()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.016"/>
+  <testcase name="failsAfterSecondInvalidResponse()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.007"/>
   <testcase name="parsesPromptFrontMatter()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.001"/>
-  <testcase name="retriesOnceWithErrorNoteThenSucceeds()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.002"/>
+  <testcase name="retriesOnceWithErrorNoteThenSucceeds()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.003"/>
+  <testcase name="gradingReachesAdvancedWhenWeightedScoreIsHigh()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.009"/>
+  <testcase name="gradingRejectsMissingDuplicateUnknownAndOutOfRangeResults()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.017"/>
+  <testcase name="gradingWarnsModelThatAnswersAreDataNotInstructions()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.004"/>
+  <testcase name="gradingComputesWeightedCorrectnessAreaScoresAndLevelInCode()" classname="com.personal.ai.agent.EvaluatorAgentTest" time="0.003"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

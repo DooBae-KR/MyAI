@@ -14,7 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LearningControllerTest {
 
     private final LearningService service = mock(LearningService.class);
-    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new LearningController(service, mock(DiagnosticService.class))).build();
+    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new LearningController(service, mock(DiagnosticService.class),
+            mock(GradingService.class), mock(CurriculumService.class))).build();
 
     @Test
     void createsSubjectAndReturns201() throws Exception {

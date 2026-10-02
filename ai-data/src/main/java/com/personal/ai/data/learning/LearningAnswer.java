@@ -18,6 +18,9 @@ public class LearningAnswer {
     @JoinColumn(name = "ASSESSMENT_ID")
     private Assessment assessment;
 
+    /** 진단 문제 번호(quiz.questions[].id). */
+    private Integer questionId;
+
     @Column(nullable = false)
     private String answerText;
 
@@ -30,13 +33,15 @@ public class LearningAnswer {
 
     protected LearningAnswer() {}
 
-    public LearningAnswer(Assessment assessment, String answerText) {
+    public LearningAnswer(Assessment assessment, Integer questionId, String answerText) {
         this.assessment = assessment;
+        this.questionId = questionId;
         this.answerText = answerText;
     }
 
     public Long getId() { return id; }
     public Assessment getAssessment() { return assessment; }
+    public Integer getQuestionId() { return questionId; }
     public String getAnswerText() { return answerText; }
     public String getScores() { return scores; }
     public void setScores(String scores) { this.scores = scores; }

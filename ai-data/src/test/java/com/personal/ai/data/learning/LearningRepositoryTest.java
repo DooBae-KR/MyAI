@@ -42,13 +42,14 @@ class LearningRepositoryTest {
         subjects.save(vue);
 
         LearningGoal goal = goals.save(new LearningGoal(vue, "실무 수준까지", Level.INTERMEDIATE, null));
-        steps.save(new LearningStep(goal, 2, "Component", null, 2, StepStatus.LOCKED));
-        LearningStep first = steps.save(new LearningStep(goal, 1, "Vue 기본", null, 1, StepStatus.AVAILABLE));
+        steps.save(new LearningStep(goal, 2, "Component", null, 2, StepStatus.LOCKED, null));
+        LearningStep first = steps.save(new LearningStep(goal, 1, "Vue 기본", null, 1, StepStatus.AVAILABLE, "{\"estimatedMinutes\":60}"));
 
         Assessment diagnostic = assessments.save(new Assessment(goal, null, AssessmentType.DIAGNOSTIC,
                 "{\"questions\":[{\"q\":\"Promise란?\"}]}"));
-        LearningAnswer answer = answers.save(new LearningAnswer(diagnostic, "비동기 결과를 담는 객체"));
+        LearningAnswer answer = answers.save(new LearningAnswer(diagnostic, 1, "비동기 결과를 담는 객체"));
         answer.setScores("{\"correctness\":80}");
+        diagnostic.setResult("{\"correctness\":80}");
         em.flush();
         em.clear();
 
@@ -62,6 +63,10 @@ class LearningRepositoryTest {
         assertTrue(assessments.findById(diagnostic.getId()).orElseThrow().getQuestions().contains("Promise"));
         LearningAnswer saved = answers.findById(answer.getId()).orElseThrow();
         assertEquals("비동기 결과를 담는 객체", saved.getAnswerText());
+        assertEquals(1, saved.getQuestionId());
+        assertTrue(assessments.findById(diagnostic.getId()).orElseThrow().getResult().contains("80"));
+        assertTrue(steps.findById(first.getId()).orElseThrow().getDetail().contains("60"));
+        assertTrue(steps.existsByGoalId(goal.getId()));
         assertTrue(saved.getScores().contains("80"));
     }
 }

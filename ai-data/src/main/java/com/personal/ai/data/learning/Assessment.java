@@ -33,6 +33,10 @@ public class Assessment {
     @Column(nullable = false)
     private String questions;
 
+    /** 채점 결과 JSON. null이면 아직 채점 전. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String result;
+
     @Column(insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -50,5 +54,7 @@ public class Assessment {
     public LearningStep getStep() { return step; }
     public AssessmentType getType() { return type; }
     public String getQuestions() { return questions; }
+    public String getResult() { return result; }
+    public void setResult(String result) { this.result = result; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

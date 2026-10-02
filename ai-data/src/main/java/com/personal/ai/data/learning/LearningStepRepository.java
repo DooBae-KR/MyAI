@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface LearningStepRepository extends JpaRepository<LearningStep, Long> {
     List<LearningStep> findByGoalIdOrderBySeq(Long goalId);
+
+    boolean existsByGoalId(Long goalId);
 }

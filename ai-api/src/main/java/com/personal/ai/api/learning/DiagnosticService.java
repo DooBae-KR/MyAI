@@ -2,7 +2,6 @@ package com.personal.ai.api.learning;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.personal.ai.agent.AgentResponseException;
 import com.personal.ai.agent.evaluator.DiagnosticQuiz;
 import com.personal.ai.agent.evaluator.EvaluatorAgent;
 import com.personal.ai.core.learning.AssessmentType;
@@ -13,7 +12,6 @@ import com.personal.ai.data.learning.LearningGoalRepository;
 import com.personal.ai.data.learning.LearningSubject;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -44,15 +42,8 @@ public class DiagnosticService {
         List<String> prerequisites = goal.getSubject().getPrerequisites().stream()
                 .map(LearningSubject::getName).sorted().toList();
 
-        DiagnosticQuiz quiz;
-        try {
-            quiz = evaluator.generateDiagnostic(goal.getSubject().getName(), goal.getGoalText(),
-                    goal.getTargetLevel(), prerequisites);
-        } catch (AgentResponseException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "진단 문제 생성 실패: " + e.getMessage());
-        } catch (RestClientException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "LLM 호출 실패: " + e.getMessage());
-        }
+        DiagnosticQuiz quiz = LlmCalls.run(() -> evaluator.generateDiagnostic(
+                goal.getSubject().getName(), goal.getGoalText(), goal.getTargetLevel(), prerequisites));
 
         Assessment saved = assessments.save(new Assessment(goal, null, AssessmentType.DIAGNOSTIC, toJson(quiz)));
         return new DiagnosticResponse(saved.getId(), goal.getId(), quiz);
