@@ -279,3 +279,18 @@ Spring을 서버에 두고 폰이 그 주소로 접속하는 구성입니다.
 4. **서버에서는 Claude Code 로그인(CLI)을 쓸 수 없습니다**(로그인은 내 PC 전용). 서버에서는 `ANTHROPIC_API_KEY`(Claude API) 또는 서버에서 돌리는 Ollama를 설정에서 선택하세요.
 
 APK가 꼭 필요하면 Capacitor로 이 `frontend/`를 감싸 Android Studio에서 빌드할 수 있습니다(현재 저장소에는 포함하지 않음).
+
+### APK 빌드 (Capacitor)
+
+`frontend/android/`에 Capacitor Android 프로젝트가 있습니다. 앱은 **서버에 배포된 HTTPS 대시보드를 그대로 엽니다**(`capacitor.config.ts`의 `server.url`). 그래서 화면을 고쳐도 APK를 다시 만들 필요가 없고, API 주소 설정도 필요 없습니다. 토큰 입력창(`APP_TOKEN`)도 그대로 동작합니다.
+
+```bash
+cd frontend
+npm install
+CAP_SERVER_URL=https://내도메인 npx cap sync android   # 서버 주소를 앱에 반영 (HTTPS만 허용)
+npx cap open android                                    # Android Studio에서 ▶ 실행 또는 Build > Build APK(s)
+```
+
+- Android Studio(JDK 21, Android SDK)가 필요합니다. 서버 주소를 바꾸면 `cap sync`를 다시 하세요. 주소가 담긴 `android/app/src/main/assets/capacitor.config.json`은 Git에 올라가지 않습니다.
+- `appId`는 `kr.doobae.personalai`, 아이콘은 Capacitor 기본값입니다(`android/app/src/main/res`에서 교체).
+- 서버 설정(`SERVER_ADDRESS`, `APP_TOKEN`, HTTPS)은 위 PWA 섹션과 같습니다.
