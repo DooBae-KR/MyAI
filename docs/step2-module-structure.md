@@ -78,7 +78,7 @@ ai-api     com.personal.ai.api.learning    Controller / Service / DTO
 
 ## 7. Agent / Prompt 규칙 (Step 5 대비)
 
-- Prompt는 `ai-agent/src/main/resources/prompts/<agent>.md`, 상단에 `promptVersion` 기재
+- Prompt는 `ai-agent/src/main/resources/prompts/<agent>[-<작업>].md`, 상단에 `promptVersion` 기재 (예: `evaluator-diagnostic.md`). 버전은 저장되는 JSON에 함께 기록한다
 - Agent는 JSON Schema에 맞는 응답을 요구하고, 파싱·검증 실패 시 1회 재시도 후 예외
 - 검증 통과한 DTO만 서비스가 DB에 저장한다 (LLM 응답 원문을 그대로 저장하지 않음)
 
