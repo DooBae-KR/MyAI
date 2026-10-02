@@ -67,6 +67,9 @@ Content-Type: application/json
 앱이 실행 중이면 `POST /mcp`(Streamable HTTP)로 비서를 MCP 도구(`ask_assistant`)로 쓸 수 있습니다.
 설정된 LLM(`AI_PROVIDER`: ollama 또는 claude)이 답합니다.
 
+프로젝트 루트의 `.mcp.json`에 이미 등록돼 있어서, 이 폴더에서 Claude Code를 열면 승인 후 바로 쓸 수 있습니다.
+수동 등록은 아래 명령입니다 (프로젝트 루트에서 실행하거나 `--scope project`를 붙이세요).
+
 ```bash
 claude mcp add --transport http personal-ai http://localhost:8080/mcp
 # 토큰을 쓸 때 (.env 의 MCP_TOKEN)
