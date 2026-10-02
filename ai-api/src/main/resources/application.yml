@@ -14,7 +14,8 @@ spring:
     # OS 환경변수가 있으면 그쪽이 우선한다. 값에 따옴표를 쓰지 말 것 (KEY=값)
     import: optional:file:./.env[.properties],optional:file:../.env[.properties]
   datasource:
-    url: ${DB_URL}
+    # DB_URL(전체 JDBC 주소)이 있으면 그것을, 없으면 DB_HOST/DB_PORT/DB_NAME으로 조립한다
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:postgres}}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   flyway:

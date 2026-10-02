@@ -84,19 +84,22 @@ claude mcp add --transport http personal-ai http://localhost:8080/mcp --header "
 OS 환경변수나 Run Configuration 값이 있으면 그쪽이 우선합니다. `.env`에는 `KEY=값` 형식으로 쓰고 따옴표는 쓰지 마세요.
 
 ```text
-DB_URL=jdbc:postgresql://<pooler-호스트>:5432/postgres
+DB_HOST=aws-1-ap-south-1.pooler.supabase.com
+DB_PORT=5432
+DB_NAME=postgres
 DB_USERNAME=postgres.<프로젝트-ref>
 DB_PASSWORD=<비밀번호>
 ```
 
-**주의: `DB_URL`은 JDBC 형식입니다.** Supabase Connect 화면의 `postgresql://사용자:비밀번호@호스트:포트/postgres`를 그대로 넣으면
-`'url' must start with "jdbc"` 오류가 납니다. 앞에 `jdbc:`를 붙이고 `사용자:비밀번호@`는 빼서, 사용자와 비밀번호는 각각 `DB_USERNAME`, `DB_PASSWORD`에 넣으세요.
-주소와 사용자 이름은 한 쌍으로 맞아야 합니다(어긋나면 `Tenant or user not found`).
+`DB_HOST`, `DB_PORT`(생략하면 5432), `DB_NAME`(생략하면 postgres)으로 `jdbc:postgresql://호스트:포트/이름` 주소를 앱이 조립하므로 `jdbc:` 형식을 직접 쓸 필요가 없습니다.
+전체 JDBC 주소를 직접 쓰고 싶으면 `DB_URL=jdbc:postgresql://...`을 주면 **`DB_URL`이 우선**합니다. `DB_URL=`처럼 값을 비운 줄은 두지 마세요.
+Supabase Connect 화면의 `postgresql://사용자:비밀번호@호스트:포트/postgres`를 `DB_URL`에 그대로 넣으면 `'url' must start with "jdbc"` 오류가 납니다.
+**풀러 주소를 쓰면 `DB_USERNAME`은 반드시 `postgres.<프로젝트-ref>`** 입니다. `postgres`만 쓰면 `no tenant identifier provided`(또는 `Tenant or user not found`)가 납니다.
 
-| 연결 방식 | DB_URL 호스트:포트 | DB_USERNAME |
+| 연결 방식 | DB_HOST : DB_PORT | DB_USERNAME |
 |---|---|---|
 | Session pooler (권장) | `aws-0-<region>.pooler.supabase.com:5432` | `postgres.<프로젝트-ref>` |
-| Transaction pooler | `aws-0-<region>.pooler.supabase.com:6543` + URL 끝에 `?prepareThreshold=0` | `postgres.<프로젝트-ref>` |
+| Transaction pooler | `aws-0-<region>.pooler.supabase.com:6543` (`DB_URL`로 쓰고 끝에 `?prepareThreshold=0`) | `postgres.<프로젝트-ref>` |
 | 직접 연결 (IPv6 전용일 수 있음) | `db.<프로젝트-ref>.supabase.co:5432` | `postgres` |
 
 시작할 때 DB 설정이 틀렸다면 앱이 원인과 해결 방법을 한국어로 안내합니다(비밀 값은 출력하지 않음).

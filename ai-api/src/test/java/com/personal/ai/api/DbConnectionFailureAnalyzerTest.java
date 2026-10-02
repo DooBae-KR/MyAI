@@ -27,6 +27,17 @@ class DbConnectionFailureAnalyzerTest {
     }
 
     @Test
+    void explainsMissingProjectRefInPoolerUsername() {
+        // Supabase 풀러에 postgres(ref 없음)로 접속하면 나오는 실제 메시지
+        FailureAnalysis a = analyze(new IllegalStateException("Unable to obtain connection from database",
+                new SQLException("FATAL: (ENOIDENTIFIER) no tenant identifier provided (external_id or sni_hostname required)")));
+
+        assertNotNull(a);
+        assertTrue(a.getAction().contains("postgres.<프로젝트-ref>"));
+        assertTrue(a.getAction().contains("ref가 빠진"));
+    }
+
+    @Test
     void explainsWrongPasswordMissingEnvAndUnreachableHost() {
         assertTrue(analyze(new SQLException("FATAL: password authentication failed for user \"postgres\""))
                 .getDescription().contains("비밀번호"));

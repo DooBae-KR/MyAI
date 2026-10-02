@@ -23,14 +23,16 @@ public class DbConnectionFailureAnalyzer extends AbstractFailureAnalyzer<Throwab
                             + "(예: jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres). "
                             + "값이 아예 없다면 .env를 읽지 못한 것이니 .env 위치(프로젝트 루트)와 실행 위치를 확인하세요.", rootFailure);
         }
-        if (chain.contains("could not resolve placeholder 'db_")) {
-            return result("DB 접속 정보(DB_URL, DB_USERNAME, DB_PASSWORD)를 찾지 못했습니다.",
-                    "프로젝트 루트의 .env에 세 값이 있는지 확인하세요. 실행 위치가 프로젝트 루트나 ai-api 폴더가 아니면 .env를 읽지 못하니, "
+        if (chain.contains("could not resolve placeholder 'db_") || chain.contains("${db_host}")) {
+            return result("DB 접속 정보(DB_HOST 또는 DB_URL, DB_USERNAME, DB_PASSWORD)를 찾지 못했습니다.",
+                    "프로젝트 루트의 .env에 값이 있는지 확인하세요. 실행 위치가 프로젝트 루트나 ai-api 폴더가 아니면 .env를 읽지 못하니, "
                             + "그 경우 IDE 실행 설정의 환경변수에 직접 넣으세요. 값에 따옴표를 붙이지 마세요.", rootFailure);
         }
-        if (chain.contains("tenant or user not found")) {
+        if (chain.contains("tenant or user not found") || chain.contains("no tenant identifier provided")
+                || chain.contains("enoidentifier")) {
             return result("Supabase가 접속한 주소에서 이 사용자나 프로젝트를 찾지 못했습니다. DB 주소와 사용자 이름이 서로 맞지 않는 경우입니다.",
-                    "풀러 주소(…pooler.supabase.com)는 사용자 이름이 postgres.<프로젝트-ref>, 직접 연결 주소(db.<ref>.supabase.co)는 postgres여야 합니다. "
+                    "풀러 주소(…pooler.supabase.com)는 DB_USERNAME이 postgres.<프로젝트-ref> 형식이어야 합니다(ref가 빠진 postgres만 쓰면 이 오류가 납니다). "
+                            + "직접 연결 주소(db.<ref>.supabase.co)는 postgres입니다. "
                             + "Supabase 대시보드의 Connect 화면에서 주소와 사용자 이름을 한 쌍으로 복사해 DB_URL, DB_USERNAME에 넣으세요. "
                             + "프로젝트가 일시 중지(pause)됐는지도 확인하세요.", rootFailure);
         }
@@ -41,7 +43,7 @@ public class DbConnectionFailureAnalyzer extends AbstractFailureAnalyzer<Throwab
         if (chain.contains("unknownhostexception") || chain.contains("network is unreachable")
                 || (chain.contains("postgresql") && (chain.contains("connection refused") || chain.contains("timed out")))) {
             return result("DB 서버에 연결하지 못했습니다. 주소가 틀렸거나 네트워크가 막혀 있습니다.",
-                    "DB_URL의 호스트와 포트를 확인하세요. 직접 연결 주소는 IPv6 전용이라 IPv4 네트워크에서는 닿지 않을 수 있으니, "
+                    "DB_HOST(또는 DB_URL)의 호스트와 포트를 확인하세요. 직접 연결 주소는 IPv6 전용이라 IPv4 네트워크에서는 닿지 않을 수 있으니, "
                             + "그 경우 Connect 화면의 Session pooler 주소(…pooler.supabase.com:5432)를 쓰세요.", rootFailure);
         }
         if (chain.contains("checksum mismatch") || chain.contains("detected applied migration not resolved locally")
