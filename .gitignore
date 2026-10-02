@@ -8,3 +8,7 @@
 # 비밀 값
 .env
 .env.example
+
+# Frontend
+node_modules/
+frontend/dist/

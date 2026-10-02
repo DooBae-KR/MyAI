@@ -12,6 +12,9 @@ public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
     @EntityGraph(attributePaths = {"goal", "goal.subject"})
     Optional<Assessment> findWithGoalById(Long id);
 
+    /** 목표의 가장 최근 진단(채점 여부 무관). */
+    Optional<Assessment> findFirstByGoalIdAndTypeOrderByIdDesc(Long goalId, AssessmentType type);
+
     /** 목표의 가장 최근 채점 완료 진단. */
     Optional<Assessment> findFirstByGoalIdAndTypeAndResultIsNotNullOrderByIdDesc(Long goalId, AssessmentType type);
 }

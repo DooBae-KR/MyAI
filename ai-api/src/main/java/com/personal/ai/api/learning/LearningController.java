@@ -3,6 +3,8 @@ package com.personal.ai.api.learning;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/learning")
 public class LearningController {
@@ -11,13 +13,16 @@ public class LearningController {
     private final DiagnosticService diagnosticService;
     private final GradingService gradingService;
     private final CurriculumService curriculumService;
+    private final DashboardService dashboardService;
 
     public LearningController(LearningService learningService, DiagnosticService diagnosticService,
-                              GradingService gradingService, CurriculumService curriculumService) {
+                              GradingService gradingService, CurriculumService curriculumService,
+                              DashboardService dashboardService) {
         this.learningService = learningService;
         this.diagnosticService = diagnosticService;
         this.gradingService = gradingService;
         this.curriculumService = curriculumService;
+        this.dashboardService = dashboardService;
     }
 
     @PostMapping("/subjects")
@@ -45,5 +50,17 @@ public class LearningController {
     @ResponseStatus(HttpStatus.CREATED)
     public CurriculumResponse createCurriculum(@PathVariable Long goalId) {
         return curriculumService.create(goalId);
+    }
+
+    /** Dashboard: 목표 목록과 진행률. */
+    @GetMapping("/goals")
+    public List<GoalSummary> goals() {
+        return dashboardService.goals();
+    }
+
+    /** Dashboard: 목표 상세(다음 할 일, 진단 결과, Step 목록). */
+    @GetMapping("/goals/{goalId}")
+    public GoalDetail goal(@PathVariable Long goalId) {
+        return dashboardService.goal(goalId);
     }
 }

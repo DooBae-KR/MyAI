@@ -134,3 +134,22 @@ POST /api/learning/goals/{goalId}/curriculum
 채점된 진단 결과(약한 영역 집중, 강한 영역 압축)로 개인 커리큘럼을 만듭니다. 응답은 `201`과
 `{ "goalId", "promptVersion", "steps": [ { id, seq, title, objective, difficulty, estimatedMinutes, practiceTasks, status } ] }`이고,
 첫 Step만 `AVAILABLE`, 나머지는 `LOCKED`입니다. 목표당 한 번만 만들 수 있고(`409`), 채점된 진단이 없어도 `409`입니다.
+
+## Dashboard (React)
+
+```http
+GET /api/learning/goals          목표 목록과 진행률
+GET /api/learning/goals/{goalId} 목표 상세: 다음 할 일(nextAction), 진단 결과, Step 목록
+```
+
+`nextAction`은 `DIAGNOSTIC_NEEDED → ANSWERS_NEEDED → CURRICULUM_NEEDED → LEARNING` 순서로 바뀝니다.
+진행률은 `COMPLETED` Step 수 / 전체 Step 수입니다.
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173  (/api 요청은 localhost:8080 Spring Boot로 프록시)
+npm run build    # 타입 검사 + 빌드
+```
+
+백엔드를 먼저 실행해 두어야 합니다. 화면은 현재 조회 전용입니다. 목표 등록, 진단 제출 등은 위 API로 합니다.
