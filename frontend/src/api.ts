@@ -67,8 +67,25 @@ export interface GoalDetail {
   steps: Step[]
 }
 
+// 서버가 APP_TOKEN으로 보호되면 401이 오고, 토큰을 한 번 물어 이 기기에만 저장한다.
+const TOKEN_KEY = 'personal-ai-token'
+const savedToken = () => { try { return localStorage.getItem(TOKEN_KEY) } catch { return null } }
+
+async function send(path: string, init?: RequestInit) {
+  const token = savedToken()
+  const headers = token ? { ...init?.headers, Authorization: `Bearer ${token}` } : init?.headers
+  return fetch(path, { ...init, headers })
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init)
+  let res = await send(path, init)
+  if (res.status === 401) {
+    const entered = window.prompt('서버 접속 토큰(APP_TOKEN)을 입력하세요')
+    if (entered) {
+      try { localStorage.setItem(TOKEN_KEY, entered.trim()) } catch { /* 저장 불가 시 이번 요청만 */ }
+      res = await send(path, init)
+    }
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.message || `요청 실패 (${res.status})`)

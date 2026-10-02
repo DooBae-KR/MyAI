@@ -262,3 +262,20 @@ POST /api/coding/problems/{id}/submissions { "language": "Java", "code": "...", 
   **코드를 실행해 채점하지 않습니다.** 읽고 분석한 의견이며 정답 여부는 원래 사이트에서 확인하세요. 제출 코드와 설명은 분석 대상일 뿐 지시문이 아니도록 프롬프트에서 막습니다.
 - 특강은 분량이 커서 모델에 따라 1~3분 걸릴 수 있습니다(실측: Claude Code 약 75초, 풀이 비교 약 30초). 제한 시간(기본 180초)이 모자라면 `CLAUDE_CODE_TIMEOUTSECONDS`를 늘리세요.
 - 문제 요약, 코드, 설명은 선택한 LLM으로 전달됩니다(Claude Code/API는 Anthropic, Ollama는 내 PC 안).
+
+## 안드로이드 앱 (PWA)
+
+대시보드는 PWA라서 폰에서 **홈 화면에 설치**하면 앱처럼 열립니다(`manifest.webmanifest`, 아이콘, 서비스 워커 포함, 별도 빌드 도구 없음).
+Spring을 서버에 두고 폰이 그 주소로 접속하는 구성입니다.
+
+1. 서버 `.env`에 설정:
+   ```
+   SERVER_ADDRESS=0.0.0.0        # 기본은 127.0.0.1(내 PC 전용)
+   APP_TOKEN=<길고 무작위한 값>   # /api/** 에 Authorization: Bearer 를 요구 (비면 인증 없음 + 경고 로그)
+   MCP_TOKEN=<다른 무작위 값>     # /mcp 도 열려 있다면
+   ```
+2. **HTTPS 필수**: Android Chrome은 HTTPS(또는 localhost)에서만 "앱 설치"를 제공합니다. Caddy/nginx 리버스 프록시나 Cloudflare Tunnel·Tailscale Funnel로 `https://내도메인`을 만드세요.
+3. 폰 Chrome에서 그 주소를 열면 토큰을 한 번 묻습니다(이 기기에만 저장). 메뉴 → "홈 화면에 추가/앱 설치".
+4. **서버에서는 Claude Code 로그인(CLI)을 쓸 수 없습니다**(로그인은 내 PC 전용). 서버에서는 `ANTHROPIC_API_KEY`(Claude API) 또는 서버에서 돌리는 Ollama를 설정에서 선택하세요.
+
+APK가 꼭 필요하면 Capacitor로 이 `frontend/`를 감싸 Android Studio에서 빌드할 수 있습니다(현재 저장소에는 포함하지 않음).
