@@ -10,20 +10,11 @@ export const STATUS_LABEL: Record<StepStatus, string> = {
   REVIEW_REQUIRED: '보충 필요', COMPLETED: '완료',
 }
 
-export const NEXT_ACTION: Record<NextAction, { title: string; hint: (id: number, pending: number | null) => string }> = {
-  DIAGNOSTIC_NEEDED: {
-    title: '다음: 현재 수준 진단',
-    hint: (id) => `POST /api/learning/goals/${id}/diagnostic 로 진단 문제를 생성하세요.`,
-  },
-  ANSWERS_NEEDED: {
-    title: '다음: 진단 답변 제출',
-    hint: (_id, pending) => `POST /api/learning/assessments/${pending}/answers 로 답변을 제출하세요.`,
-  },
-  CURRICULUM_NEEDED: {
-    title: '다음: 커리큘럼 생성',
-    hint: (id) => `POST /api/learning/goals/${id}/curriculum 으로 개인 커리큘럼을 만드세요.`,
-  },
-  LEARNING: { title: '학습 진행 중', hint: () => '시작 가능한 Step부터 학습하세요.' },
+export const NEXT_TITLE: Record<NextAction, string> = {
+  DIAGNOSTIC_NEEDED: '다음: 현재 수준 진단',
+  ANSWERS_NEEDED: '다음: 진단 답변 제출',
+  CURRICULUM_NEEDED: '다음: 커리큘럼 생성',
+  LEARNING: '학습 진행 중',
 }
 
 export const formatMinutes = (m: number) =>
@@ -31,3 +22,10 @@ export const formatMinutes = (m: number) =>
 
 /** 점수 구간: 60 미만은 보강 필요, 80 이상은 충분 (커리큘럼 생성 기준과 같다). */
 export const scoreTone = (score: number) => (score < 60 ? 'weak' : score >= 80 ? 'strong' : 'mid')
+
+export const TYPE_LABEL: Record<string, string> = {
+  CONCEPT: '개념', SYNTAX: '문법', UNDERSTANDING: '이해', APPLICATION: '응용',
+  PROBLEM_SOLVING: '문제 해결', CODE_QUALITY: '코드 품질', DEBUGGING: '디버깅',
+}
+
+export const difficultyDots = (d: number) => '●'.repeat(d) + '○'.repeat(Math.max(0, 5 - d))

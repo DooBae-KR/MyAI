@@ -5,8 +5,8 @@ import com.personal.ai.core.learning.Level;
 
 import java.util.List;
 
-/** nextAction: DIAGNOSTIC_NEEDED → ANSWERS_NEEDED → CURRICULUM_NEEDED → LEARNING */
-public record GoalDetail(GoalSummary goal, String nextAction, Long pendingAssessmentId,
+/** nextAction: DIAGNOSTIC_NEEDED → ANSWERS_NEEDED → CURRICULUM_NEEDED → LEARNING. ANSWERS_NEEDED일 때만 pendingQuiz가 있다. */
+public record GoalDetail(GoalSummary goal, String nextAction, Long pendingAssessmentId, QuizView pendingQuiz,
                          Diagnostic diagnostic, List<CurriculumResponse.Step> steps) {
 
     public record Diagnostic(Long assessmentId, int correctness, Level level, List<AreaScore> areaScores,

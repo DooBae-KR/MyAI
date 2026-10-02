@@ -54,7 +54,9 @@ class DiagnosticServiceTest {
 
         DiagnosticResponse response = service.generate(1L);
 
-        assertEquals(quiz, response.quiz());
+        assertEquals(QuizView.from(quiz), response.quiz());
+        assertFalse(response.quiz().toString().contains("keyPoints") || response.quiz().toString().contains("비동기"),
+                "채점 기준(keyPoints)이 응답에 노출되면 안 된다");
         ArgumentCaptor<Assessment> saved = ArgumentCaptor.forClass(Assessment.class);
         verify(assessments).save(saved.capture());
         assertEquals(AssessmentType.DIAGNOSTIC, saved.getValue().getType());

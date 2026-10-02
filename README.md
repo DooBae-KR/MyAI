@@ -109,7 +109,7 @@ POST /api/learning/goals/{goalId}/diagnostic
 ```
 
 목표의 초기 진단 문제를 설정된 LLM(`AI_PROVIDER`)으로 생성해 저장합니다. 응답은 `201`과
-`{ "assessmentId", "goalId", "quiz": { "promptVersion", "questions": [...] } }`입니다.
+`{ "assessmentId", "goalId", "quiz": { "promptVersion", "questions": [...] } }`입니다(문제에 `keyPoints`는 없습니다).
 목표가 없으면 `404`, 모델 응답이 형식을 두 번 어기면 `502`, LLM에 연결할 수 없으면 `503`입니다.
 프롬프트는 `ai-agent/src/main/resources/prompts/`에 있고 `promptVersion`이 결과와 함께 저장됩니다.
 
@@ -152,4 +152,7 @@ npm run dev      # http://localhost:5173  (/api 요청은 localhost:8080 Spring 
 npm run build    # 타입 검사 + 빌드
 ```
 
-백엔드를 먼저 실행해 두어야 합니다. 화면은 현재 조회 전용입니다. 목표 등록, 진단 제출 등은 위 API로 합니다.
+백엔드를 먼저 실행해 두어야 합니다. 화면에서 **목표 등록 → 진단 문제 생성 → 답변 제출·채점 → 커리큘럼 생성**까지 모두 할 수 있습니다.
+- 진단 문제 화면에는 채점 기준(`keyPoints`)을 내려주지 않습니다(정답 힌트가 되므로). `GET /goals/{id}`는 답변 대기 중인 진단의 문제(`pendingQuiz`)를 함께 줍니다.
+- 작성 중인 답변은 브라우저(localStorage)에 임시 저장되어 새로고침이나 오류 후에도 남고, 제출에 성공하면 지워집니다.
+- LLM 호출은 모델에 따라 오래 걸릴 수 있어(최대 1~2분) 진행 중 표시를 보여 주고, 실패하면 사유와 함께 다시 시도할 수 있습니다.

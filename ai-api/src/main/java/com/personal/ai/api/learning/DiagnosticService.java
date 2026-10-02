@@ -46,7 +46,7 @@ public class DiagnosticService {
                 goal.getSubject().getName(), goal.getGoalText(), goal.getTargetLevel(), prerequisites));
 
         Assessment saved = assessments.save(new Assessment(goal, null, AssessmentType.DIAGNOSTIC, toJson(quiz)));
-        return new DiagnosticResponse(saved.getId(), goal.getId(), quiz);
+        return new DiagnosticResponse(saved.getId(), goal.getId(), QuizView.from(quiz));
     }
 
     private String toJson(DiagnosticQuiz quiz) {

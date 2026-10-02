@@ -1,37 +1,8 @@
-import { useEffect, useState } from 'react'
 import { fetchGoal, fetchGoals, type GoalDetail, type GoalSummary } from './api'
-import { LEVEL_LABEL, NEXT_ACTION, STATUS_LABEL, formatMinutes, scoreTone } from './labels'
-
-/** '#/' 는 목록, '#/goals/3' 는 상세. 화면이 둘뿐이라 라우터 라이브러리 없이 해시로 나눈다. */
-function useHashRoute(): number | null {
-  const parse = () => {
-    const m = location.hash.match(/^#\/goals\/(\d+)$/)
-    return m ? Number(m[1]) : null
-  }
-  const [goalId, setGoalId] = useState(parse)
-  useEffect(() => {
-    const onChange = () => setGoalId(parse())
-    window.addEventListener('hashchange', onChange)
-    return () => window.removeEventListener('hashchange', onChange)
-  }, [])
-  return goalId
-}
-
-/** 비동기 조회 상태(로딩/오류/데이터)를 한곳에서 다룬다. */
-function useLoad<T>(load: () => Promise<T>, key: unknown) {
-  const [state, setState] = useState<{ data?: T; error?: string }>({})
-  useEffect(() => {
-    let cancelled = false
-    setState({})
-    load().then(
-      (data) => !cancelled && setState({ data }),
-      (e: Error) => !cancelled && setState({ error: e.message }),
-    )
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-  return state
-}
+import { useHashRoute, useLoad } from './hooks'
+import { LEVEL_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, scoreTone } from './labels'
+import { NewGoalForm } from './NewGoalForm'
+import { NextActionPanel } from './NextActionPanel'
 
 export default function App() {
   const goalId = useHashRoute()
@@ -62,18 +33,13 @@ function GoalList() {
   const { data, error } = useLoad<GoalSummary[]>(fetchGoals, 'list')
   if (error) return <p className="error" role="alert">목록을 불러오지 못했습니다: {error}</p>
   if (!data) return <p className="muted">불러오는 중…</p>
-  if (data.length === 0) {
-    return (
-      <section className="empty">
-        <h2>아직 학습 목표가 없습니다</h2>
-        <p>다음 요청으로 첫 목표를 등록하세요.</p>
-        <pre>{`POST /api/learning/subjects\n{ "subject": "Vue", "goal": "실무 수준까지 배우기" }`}</pre>
-      </section>
-    )
-  }
   return (
     <>
       <h1>내 학습 목표</h1>
+      <details className="new-goal" open={data.length === 0}>
+        <summary>{data.length === 0 ? '첫 학습 목표를 등록하세요' : '+ 새 목표 추가'}</summary>
+        <NewGoalForm />
+      </details>
       <ul className="cards">
         {data.map((g) => (
           <li key={g.goalId}>
@@ -99,20 +65,19 @@ function GoalList() {
 }
 
 function GoalPage({ goalId }: { goalId: number }) {
-  const { data, error } = useLoad<GoalDetail>(() => fetchGoal(goalId), goalId)
+  const { data, error, reload } = useLoad<GoalDetail>(() => fetchGoal(goalId), goalId)
   return (
     <>
       <a href="#/" className="back">← 목록</a>
       {error && <p className="error" role="alert">목표를 불러오지 못했습니다: {error}</p>}
       {!data && !error && <p className="muted">불러오는 중…</p>}
-      {data && <GoalView detail={data} />}
+      {data && <GoalView detail={data} onChanged={reload} />}
     </>
   )
 }
 
-function GoalView({ detail }: { detail: GoalDetail }) {
-  const { goal, nextAction, pendingAssessmentId, diagnostic, steps } = detail
-  const next = NEXT_ACTION[nextAction]
+function GoalView({ detail, onChanged }: { detail: GoalDetail; onChanged: () => void }) {
+  const { goal, diagnostic, steps } = detail
   return (
     <>
       <h1>{goal.subject}</h1>
@@ -123,10 +88,7 @@ function GoalView({ detail }: { detail: GoalDetail }) {
       </p>
       <Progress percent={goal.progressPercent} label="전체 진행률" />
 
-      <section className={`banner ${nextAction === 'LEARNING' ? 'ok' : ''}`}>
-        <strong>{next.title}</strong>
-        <code>{next.hint(goal.goalId, pendingAssessmentId)}</code>
-      </section>
+      <NextActionPanel detail={detail} onChanged={onChanged} />
 
       {diagnostic && (
         <section aria-labelledby="diag">
@@ -163,7 +125,7 @@ function GoalView({ detail }: { detail: GoalDetail }) {
                 </div>
                 <p>{s.objective}</p>
                 <div className="muted small">
-                  난이도 {'●'.repeat(s.difficulty)}{'○'.repeat(5 - s.difficulty)} · 약 {formatMinutes(s.estimatedMinutes)}
+                  난이도 {difficultyDots(s.difficulty)} · 약 {formatMinutes(s.estimatedMinutes)}
                 </div>
                 {s.practiceTasks.length > 0 && (
                   <ul className="tasks">{s.practiceTasks.map((t) => <li key={t}>{t}</li>)}</ul>

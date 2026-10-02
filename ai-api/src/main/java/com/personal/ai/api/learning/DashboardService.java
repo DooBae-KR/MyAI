@@ -3,6 +3,7 @@ package com.personal.ai.api.learning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.personal.ai.agent.evaluator.DiagnosticQuiz;
 import com.personal.ai.agent.evaluator.GradingResult;
 import com.personal.ai.core.learning.AssessmentType;
 import com.personal.ai.core.learning.StepStatus;
@@ -67,6 +68,7 @@ public class DashboardService {
 
         String nextAction;
         Long pending = null;
+        QuizView pendingQuiz = null;
         if (!stepEntities.isEmpty()) {
             nextAction = "LEARNING";
         } else if (graded.isPresent()) {
@@ -74,6 +76,7 @@ public class DashboardService {
         } else if (latest.isPresent()) {
             nextAction = "ANSWERS_NEEDED";
             pending = latest.get().getId();
+            pendingQuiz = QuizView.from(readQuiz(latest.get().getQuestions()));
         } else {
             nextAction = "DIAGNOSTIC_NEEDED";
         }
@@ -93,7 +96,7 @@ public class DashboardService {
                     s.getDifficulty() == null ? 0 : s.getDifficulty(), detail.path("estimatedMinutes").asInt(0),
                     tasks, s.getStatus()));
         }
-        return new GoalDetail(summary(goal, counts), nextAction, pending, diagnostic, view);
+        return new GoalDetail(summary(goal, counts), nextAction, pending, pendingQuiz, diagnostic, view);
     }
 
     private GoalSummary summary(LearningGoal g, Map<StepStatus, Integer> counts) {
@@ -102,6 +105,14 @@ public class DashboardService {
         int percent = total == 0 ? 0 : (int) Math.round(done * 100.0 / total);
         return new GoalSummary(g.getId(), g.getSubject().getName(), g.getGoalText(), g.getTargetLevel(),
                 g.getCurrentLevel(), g.getDeadline(), total, done, percent);
+    }
+
+    private DiagnosticQuiz readQuiz(String json) {
+        try {
+            return mapper.readValue(json, DiagnosticQuiz.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("저장된 진단 문제를 읽을 수 없습니다.", e);
+        }
     }
 
     private GradingResult readResult(String json) {

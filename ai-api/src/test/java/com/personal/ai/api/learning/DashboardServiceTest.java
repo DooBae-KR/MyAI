@@ -73,11 +73,14 @@ class DashboardServiceTest {
                 .thenReturn(Optional.empty());
         assertEquals("DIAGNOSTIC_NEEDED", service.goal(1L).nextAction());
 
-        Assessment ungraded = new Assessment(goal, null, AssessmentType.DIAGNOSTIC, "{}");
+        Assessment ungraded = new Assessment(goal, null, AssessmentType.DIAGNOSTIC, mapper.writeValueAsString(
+                new DiagnosticQuiz("1", List.of(new DiagnosticQuestion(1, "JS", "CONCEPT", 1, "var와 let?", List.of("정답 힌트"))))));
         when(assessments.findFirstByGoalIdAndTypeOrderByIdDesc(1L, AssessmentType.DIAGNOSTIC)).thenReturn(Optional.of(ungraded));
         GoalDetail answersNeeded = service.goal(1L);
         assertEquals("ANSWERS_NEEDED", answersNeeded.nextAction());
         assertNull(answersNeeded.diagnostic());
+        assertEquals("var와 let?", answersNeeded.pendingQuiz().questions().get(0).question());
+        assertFalse(answersNeeded.pendingQuiz().toString().contains("정답 힌트")); // keyPoints는 내려주지 않는다
 
         Assessment graded = gradedDiagnostic();
         when(assessments.findFirstByGoalIdAndTypeAndResultIsNotNullOrderByIdDesc(1L, AssessmentType.DIAGNOSTIC))

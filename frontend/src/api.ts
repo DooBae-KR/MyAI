@@ -29,10 +29,33 @@ export interface Step {
   status: StepStatus
 }
 
+export interface QuizQuestion {
+  id: number
+  area: string
+  type: string
+  difficulty: number
+  question: string
+}
+
+export interface Quiz {
+  promptVersion: string
+  questions: QuizQuestion[]
+}
+
+export interface GradingResult {
+  correctness: number
+  level: Level
+  areaScores: { area: string; score: number }[]
+  strengths: string[]
+  weaknesses: string[]
+  questionResults: { questionId: number; score: number; feedback: string }[]
+}
+
 export interface GoalDetail {
   goal: GoalSummary
   nextAction: NextAction
   pendingAssessmentId: number | null
+  pendingQuiz: Quiz | null
   diagnostic: {
     assessmentId: number
     correctness: number
@@ -44,8 +67,8 @@ export interface GoalDetail {
   steps: Step[]
 }
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init)
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.message || `요청 실패 (${res.status})`)
@@ -53,5 +76,25 @@ async function get<T>(path: string): Promise<T> {
   return res.json()
 }
 
-export const fetchGoals = () => get<GoalSummary[]>('/api/learning/goals')
-export const fetchGoal = (id: number) => get<GoalDetail>(`/api/learning/goals/${id}`)
+const post = <T>(path: string, body?: unknown) =>
+  request<T>(path, {
+    method: 'POST',
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+
+export const fetchGoals = () => request<GoalSummary[]>('/api/learning/goals')
+export const fetchGoal = (id: number) => request<GoalDetail>(`/api/learning/goals/${id}`)
+
+export interface NewGoal {
+  subject: string
+  goal: string
+  targetLevel?: Level
+  deadline?: string
+}
+export const createGoal = (goal: NewGoal) =>
+  post<{ subjectId: number; goalId: number }>('/api/learning/subjects', goal)
+export const createDiagnostic = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/diagnostic`)
+export const submitAnswers = (assessmentId: number, answers: { questionId: number; answer: string }[]) =>
+  post<{ result: GradingResult }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
+export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)
