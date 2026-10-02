@@ -109,6 +109,8 @@ export interface LlmSettings {
   activeModel: string | null // Claude Code는 모델을 지정하지 않으면 null(= CLI 기본 모델)
   claudeAvailable: boolean
   claudeCodeAvailable: boolean
+  claudeCodeCommand: string | null // 찾은 실행 파일
+  claudeCodeProblem: string | null // 못 찾았을 때의 이유와 시도한 위치
   defaults: { ollamaModel: string; claudeModel: string }
 }
 
@@ -129,3 +131,4 @@ export const updateLlmSettings = (body: { provider: Provider; ollamaModel: strin
     body: JSON.stringify(body),
   })
 export const testLlm = () => post<LlmTestResult>('/api/settings/llm/test')
+export const refreshClaudeCode = () => post<LlmSettings>('/api/settings/llm/claude-code/refresh')

@@ -43,27 +43,6 @@ public class ClaudeCodeAiModel implements AiModel {
         this.properties = properties;
     }
 
-    /** CLI를 찾을 수 있는지(claude --version이 성공하는지). 로그인 여부는 연결 테스트로 확인한다. */
-    public static boolean isInstalled(ClaudeCodeProperties properties) {
-        try {
-            List<String> command = prefix(isWindows(), properties.getCommand());
-            command.add("--version");
-            Process p = new ProcessBuilder(command).redirectErrorStream(true).start();
-            p.getOutputStream().close();
-            CompletableFuture.runAsync(() -> drain(p.getInputStream()));
-            if (!p.waitFor(15, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
-                return false;
-            }
-            return p.exitValue() == 0;
-        } catch (IOException e) {
-            return false;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
-
     @Override
     public AiResponse chat(AiRequest request) {
         List<String> command = prefix(isWindows(), properties.getCommand());
@@ -170,10 +149,6 @@ public class ClaudeCodeAiModel implements AiModel {
         } catch (IOException e) {
             return new byte[0];
         }
-    }
-
-    private static void drain(InputStream in) {
-        readAll(in);
     }
 
     private static String text(CompletableFuture<byte[]> future) {

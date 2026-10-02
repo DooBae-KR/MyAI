@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchLlmSettings, testLlm, updateLlmSettings, type LlmSettings, type LlmTestResult, type Provider } from './api'
+import { fetchLlmSettings, refreshClaudeCode, testLlm, updateLlmSettings, type LlmSettings, type LlmTestResult, type Provider } from './api'
 import { useAction, useLoad } from './hooks'
 import { CLAUDE_CODE_MODEL_SUGGESTIONS, CLAUDE_MODEL_SUGGESTIONS, PROVIDER_LABEL, modelName } from './labels'
 
@@ -25,6 +25,7 @@ function LlmForm({ settings, onSaved }: { settings: LlmSettings; onSaved: () => 
   const [test, setTest] = useState<LlmTestResult | null>(null)
   const save = useAction()
   const check = useAction()
+  const recheck = useAction()
 
   // 저장된 설정이 바뀌면(저장 후 다시 읽기) 폼을 서버 값에 맞춘다
   useEffect(() => {
@@ -44,6 +45,11 @@ function LlmForm({ settings, onSaved }: { settings: LlmSettings; onSaved: () => 
     setTest(null)
     const res = await save.run(() => updateLlmSettings({ provider, ollamaModel, claudeModel, claudeCodeModel }))
     if (res) { setSaved(true); onSaved() }
+  }
+
+  async function detectAgain() {
+    const res = await recheck.run(refreshClaudeCode)
+    if (res) onSaved() // 다시 읽어 선택 가능 여부와 이유를 갱신한다
   }
 
   async function runTest() {
@@ -87,6 +93,15 @@ function LlmForm({ settings, onSaved }: { settings: LlmSettings; onSaved: () => 
             </span></span>
         </label>
       </fieldset>
+
+      <div className="detect" aria-live="polite">
+        {settings.claudeCodeAvailable
+          ? <p className="muted small">Claude Code를 찾았습니다: <code>{settings.claudeCodeCommand}</code></p>
+          : <p className="error" role="status">Claude Code를 찾지 못했습니다. {settings.claudeCodeProblem}</p>}
+        {recheck.error && <p className="error" role="alert">{recheck.error}</p>}
+        <button onClick={detectAgain} disabled={recheck.pending}>{recheck.pending ? '확인 중…' : 'Claude Code 다시 확인'}</button>
+        <span className="muted small"> 설치하거나 로그인 환경을 고친 뒤 앱을 다시 시작하지 않고 확인합니다.</span>
+      </div>
 
       <div className="form">
         <label>Ollama 모델 <span className="muted small">(비워 두면 기본값)</span>

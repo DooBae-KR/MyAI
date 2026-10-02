@@ -36,8 +36,8 @@ ollama:
   model: qwen3:14b
 
 ai:
-  # ollama(로컬 LLM, 기본값) | claude(Claude API)
-  provider: ${AI_PROVIDER:ollama}
+  # auto(기본: 쓸 수 있는 Claude 우선, 없으면 ollama) | ollama | claude | claude-code
+  provider: ${AI_PROVIDER:auto}
 
 claude:
   api-key: ${ANTHROPIC_API_KEY:}

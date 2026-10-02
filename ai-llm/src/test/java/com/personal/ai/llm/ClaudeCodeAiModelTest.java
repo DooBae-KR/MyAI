@@ -2,6 +2,7 @@ package com.personal.ai.llm;
 
 import com.personal.ai.core.model.AiRequest;
 import com.personal.ai.llm.claudecode.ClaudeCodeAiModel;
+import com.personal.ai.llm.claudecode.ClaudeCodeDetector;
 import com.personal.ai.llm.claudecode.ClaudeCodeProperties;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,13 +116,22 @@ class ClaudeCodeAiModelTest {
         missing.setCommand(dir.resolve("no-such-claude").toString());
         e = assertThrows(LlmCallException.class, () -> new ClaudeCodeAiModel(missing).chat(request(null, "hi", null)));
         assertTrue(e.getMessage().contains("찾을 수 없") || e.getMessage().contains("실행할 수 없"), e.getMessage());
-        assertFalse(ClaudeCodeAiModel.isInstalled(missing));
+        missing.setSearchCommonLocations(false);
+        assertFalse(new ClaudeCodeDetector(missing).detect().found());
     }
 
     @Test
     void detectsInstalledCliByVersionCommand() throws Exception {
-        assertTrue(ClaudeCodeAiModel.isInstalled(fakeCli("echo 2.1.0 \"(Claude Code)\"\n", 20)));
-        assertFalse(ClaudeCodeAiModel.isInstalled(fakeCli("exit 1\n", 20)));
+        ClaudeCodeProperties ok = fakeCli("echo 2.1.0 \"(Claude Code)\"\n", 20);
+        ClaudeCodeDetector.Detection found = new ClaudeCodeDetector(ok).detect();
+        assertTrue(found.found());
+        assertEquals("2.1.0 (Claude Code)", found.version());
+
+        ClaudeCodeProperties broken = fakeCli("exit 1\n", 20);
+        broken.setSearchCommonLocations(false);
+        ClaudeCodeDetector.Detection notFound = new ClaudeCodeDetector(broken).detect();
+        assertFalse(notFound.found());
+        assertTrue(notFound.problem().contains("종료 코드 1"), notFound.problem());
     }
 
     @Test
@@ -138,5 +148,25 @@ class ClaudeCodeAiModelTest {
         var m = ClaudeCodeAiModel.class.getDeclaredMethod(name, types);
         m.setAccessible(true);
         return m.invoke(null, args);
+    }
+
+    @Test
+    void detectorFallsBackToACommonLocationAndRemembersIt() throws Exception {
+        // PATH의 claude는 없지만 흔한 위치(여기서는 후보 목록을 흉내 낸 두 번째 후보)에 있는 경우
+        Path realCli = dir.resolve("claude");
+        Files.writeString(realCli, "#!/bin/sh\necho 2.1.0 \"(Claude Code)\"\n");
+        realCli.toFile().setExecutable(true);
+        ClaudeCodeProperties props = new ClaudeCodeProperties();
+        props.setCommand(dir.resolve("not-on-path").toString());
+        props.setSearchCommonLocations(false);
+
+        ClaudeCodeDetector detector = new ClaudeCodeDetector(props);
+        assertFalse(detector.detect().found());
+        assertTrue(detector.last().problem().contains("not-on-path"), "시도한 위치가 이유에 보여야 한다");
+
+        props.setCommand(realCli.toString()); // 사용자가 경로를 고친 뒤 다시 확인
+        assertTrue(detector.detect().found());
+        assertEquals(realCli.toString(), detector.last().command());
+        assertNull(detector.last().problem());
     }
 }

@@ -50,9 +50,18 @@ public class SettingsService {
 
     public LlmSettingsResponse get() {
         Selection s = router.selection();
+        var detection = router.claudeCodeDetection();
         return new LlmSettingsResponse(s.provider().name(), s.ollamaModel(), s.claudeModel(), s.claudeCodeModel(),
                 router.effectiveModel(s), router.isAvailable(LlmProvider.CLAUDE), router.isAvailable(LlmProvider.CLAUDE_CODE),
+                detection == null ? null : detection.command(),
+                detection == null || detection.found() ? null : detection.problem(),
                 new LlmSettingsResponse.Defaults(router.defaultModel(LlmProvider.OLLAMA), router.defaultModel(LlmProvider.CLAUDE)));
+    }
+
+    /** 앱을 다시 시작하지 않고 Claude Code를 다시 찾는다(설치나 로그인 환경을 고친 뒤). */
+    public LlmSettingsResponse refreshClaudeCode() {
+        router.redetectClaudeCode();
+        return get();
     }
 
     public LlmSettingsResponse update(UpdateLlmRequest request) {

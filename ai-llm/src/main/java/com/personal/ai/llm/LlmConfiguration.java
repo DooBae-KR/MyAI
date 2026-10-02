@@ -5,7 +5,7 @@ import com.personal.ai.core.model.LlmProvider;
 import com.personal.ai.llm.claude.ClaudeAiModel;
 import com.personal.ai.llm.ollama.OllamaAiModel;
 import com.personal.ai.llm.claude.ClaudeProperties;
-import com.personal.ai.llm.claudecode.ClaudeCodeAiModel;
+import com.personal.ai.llm.claudecode.ClaudeCodeDetector;
 import com.personal.ai.llm.claudecode.ClaudeCodeProperties;
 
 import com.personal.ai.llm.ollama.OllamaProperties;
@@ -40,17 +40,32 @@ public class LlmConfiguration {
                     .build(), claude));
         }
 
-        if (ClaudeCodeAiModel.isInstalled(claudeCode)) {
-            models.put(LlmProvider.CLAUDE_CODE, new ClaudeCodeAiModel(claudeCode));
+        ClaudeCodeDetector detector = new ClaudeCodeDetector(claudeCode);
+        if (detector.detect().found()) {
+            models.put(LlmProvider.CLAUDE_CODE, detector.newModel());
         }
 
-        LlmProvider initial = LlmProvider.valueOf(provider.trim().toUpperCase().replace('-', '_'));
+        LlmProvider initial = initialProvider(provider, models);
         if (!models.containsKey(initial)) {
             throw new IllegalStateException(initial == LlmProvider.CLAUDE_CODE
                     ? "ai.provider=claude-code 이지만 Claude Code CLI(claude)를 찾을 수 없습니다."
                     : "ai.provider=claude 이지만 ANTHROPIC_API_KEY(claude.api-key)가 설정되지 않았습니다.");
         }
-        return new RoutingAiModel(models, initial, ollama.getModel(), claude.getModel());
+        return new RoutingAiModel(models, initial, ollama.getModel(), claude.getModel(), detector);
+    }
+
+    /** auto(기본): 쓸 수 있는 Claude를 우선(Claude Code → Claude API)하고 없으면 Ollama. 화면에서 선택을 저장하면 그것이 우선한다. */
+    static LlmProvider initialProvider(String setting, Map<LlmProvider, AiModel> available) {
+        String name = setting.trim().toUpperCase().replace('-', '_');
+        if (!name.equals("AUTO")) {
+            return LlmProvider.valueOf(name);
+        }
+        for (LlmProvider candidate : new LlmProvider[]{LlmProvider.CLAUDE_CODE, LlmProvider.CLAUDE}) {
+            if (available.containsKey(candidate)) {
+                return candidate;
+            }
+        }
+        return LlmProvider.OLLAMA;
     }
 
     /**

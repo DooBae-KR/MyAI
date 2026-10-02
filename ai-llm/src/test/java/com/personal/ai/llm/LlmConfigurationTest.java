@@ -15,6 +15,7 @@ class LlmConfigurationTest {
         claude.setApiKey(apiKey);
         ClaudeCodeProperties claudeCode = new ClaudeCodeProperties();
         claudeCode.setCommand("personal-ai-test-no-such-cli"); // 이 PC에 있는 진짜 claude의 영향을 받지 않게 한다
+        claudeCode.setSearchCommonLocations(false);
         return new LlmConfiguration().aiModel(new OllamaProperties(), claude, claudeCode, provider);
     }
 
@@ -44,5 +45,13 @@ class LlmConfigurationTest {
     void claudeCodeIsAvailableOnlyWhenTheCliExists() {
         assertFalse(build("", "ollama").isAvailable(LlmProvider.CLAUDE_CODE));
         assertThrows(IllegalStateException.class, () -> build("", "claude-code"));
+    }
+
+    @Test
+    void autoPrefersClaudeOverLocalOllamaWhenAvailable() {
+        // 키도 CLI도 없으면 Ollama, 키가 있으면 Claude API (Claude Code는 별도 테스트에서 가짜 CLI로 확인)
+        assertEquals(LlmProvider.OLLAMA, build("", "auto").selection().provider());
+        assertEquals(LlmProvider.CLAUDE, build("sk-ant-abc", "auto").selection().provider());
+        assertEquals(LlmProvider.CLAUDE, build("sk-ant-abc", " AUTO ").selection().provider());
     }
 }

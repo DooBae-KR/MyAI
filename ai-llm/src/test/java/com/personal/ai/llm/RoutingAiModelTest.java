@@ -87,4 +87,16 @@ class RoutingAiModelTest {
                 () -> new RoutingAiModel(Map.of(LlmProvider.OLLAMA, named("o", new StringBuilder())),
                         LlmProvider.CLAUDE, "a", "b"));
     }
+
+    @Test
+    void failsClearlyWhenTheSelectedProviderDisappears() {
+        RoutingAiModel router = router(new StringBuilder(), true);
+        router.select(new Selection(LlmProvider.CLAUDE, null, null, null));
+        assertEquals("claude", router.chat(request(null)).getContent());
+
+        // Claude Code를 다시 확인해 없어진 상황을 흉내 낸다: 모델이 빠진 라우터는 NPE가 아니라 안내 예외를 던져야 한다
+        RoutingAiModel ollamaOnly = router(new StringBuilder(), false);
+        assertNull(ollamaOnly.claudeCodeDetection());
+        assertNull(ollamaOnly.redetectClaudeCode());
+    }
 }
