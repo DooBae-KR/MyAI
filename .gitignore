@@ -1,5 +1,5 @@
 .gradle/
-#build/
+build/
 #out/
 #.idea/
 #*.iml
@@ -12,5 +12,5 @@
 # Frontend
 node_modules/
 frontend/dist/
-ai-agent/build/
-ai-data/build/
+# 프론트엔드 빌드 결과(Spring Boot가 8080에서 서빙). npm run build:spring 으로 생성
+ai-api/src/main/resources/static/

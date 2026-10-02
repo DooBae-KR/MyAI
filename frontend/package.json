@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:spring": "tsc --noEmit && vite build --outDir ../ai-api/src/main/resources/static --emptyOutDir"
   },
   "dependencies": {
     "react": "^19.3.0",

@@ -157,14 +157,24 @@ GET /api/learning/goals/{goalId} 목표 상세: 다음 할 일(nextAction), 진�
 `nextAction`은 `DIAGNOSTIC_NEEDED → ANSWERS_NEEDED → CURRICULUM_NEEDED → LEARNING` 순서로 바뀝니다.
 진행률은 `COMPLETED` Step 수 / 전체 Step 수입니다.
 
+**화면 보는 방법 (둘 중 하나)**
+
 ```bash
+# A. localhost:8080 하나로 보기 (Spring Boot가 화면까지 서빙)
 cd frontend
 npm install
-npm run dev      # http://localhost:5173  (/api 요청은 localhost:8080 Spring Boot로 프록시)
-npm run build    # 타입 검사 + 빌드
+npm run build:spring        # 결과가 ai-api/src/main/resources/static 에 생김(Git 제외)
+# 그다음 백엔드를 (다시) 실행 → http://localhost:8080
+
+# B. 화면을 고치면서 보기 (즉시 반영, /api 요청은 localhost:8080으로 프록시)
+cd frontend
+npm run dev                 # http://localhost:5173  (백엔드를 먼저 실행해 둘 것)
 ```
 
-백엔드를 먼저 실행해 두어야 합니다. 화면에서 **목표 등록 → 진단 문제 생성 → 답변 제출·채점 → 커리큘럼 생성**까지 모두 할 수 있습니다.
+`localhost:8080`은 화면을 빌드(`build:spring`)하기 전에는 API만 응답합니다. 프론트 코드를 바꾸면 다시 빌드해야 8080에 반영됩니다.
+처음 받았거나 `git pull` 뒤에도 `static` 폴더는 Git에 없으니 한 번 빌드해야 합니다.
+
+화면에서 **목표 등록 → 진단 문제 생성 → 답변 제출·채점 → 커리큘럼 생성**까지 모두 할 수 있습니다.
 - 진단 문제 화면에는 채점 기준(`keyPoints`)을 내려주지 않습니다(정답 힌트가 되므로). `GET /goals/{id}`는 답변 대기 중인 진단의 문제(`pendingQuiz`)를 함께 줍니다.
 - 작성 중인 답변은 브라우저(localStorage)에 임시 저장되어 새로고침이나 오류 후에도 남고, 제출에 성공하면 지워집니다.
 - LLM 호출은 모델에 따라 오래 걸릴 수 있어(최대 1~2분) 진행 중 표시를 보여 주고, 실패하면 사유와 함께 다시 시도할 수 있습니다.
