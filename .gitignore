@@ -7,3 +7,10 @@
 
 # 비밀 값
 .env
+.env.example
+
+# Frontend
+node_modules/
+frontend/dist/
+ai-agent/build/
+ai-data/build/

@@ -1,0 +1,8 @@
+spring:
+  flyway:
+    schemas: personal_ai
+    default-schema: personal_ai
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate.default_schema: personal_ai

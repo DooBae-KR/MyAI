@@ -1,10 +1,32 @@
 server:
   port: 8080
+  error:
+    include-message: always   # 400/404/502 등의 사유를 응답 본문에 포함
   servlet:
     encoding:
       charset: UTF-8
       enabled: true
       force: true
+
+spring:
+  config:
+    # .env를 IDE/터미널 구분 없이 읽는다. 실행 위치가 루트일 때와 ai-api일 때를 모두 지원.
+    # OS 환경변수가 있으면 그쪽이 우선한다. 값에 따옴표를 쓰지 말 것 (KEY=값)
+    import: optional:file:./.env[.properties],optional:file:../.env[.properties]
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  flyway:
+    schemas: personal_ai
+    default-schema: personal_ai
+    create-schemas: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.default_schema: personal_ai
+    hibernate:
+      ddl-auto: none   # 스키마는 Flyway(ai-data/db/migration)만 변경한다
 
 ollama:
   base-url: http://localhost:11434
