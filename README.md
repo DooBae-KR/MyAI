@@ -80,8 +80,8 @@ claude mcp add --transport http personal-ai http://localhost:8080/mcp --header "
 
 ## 데이터베이스 (Supabase / PostgreSQL)
 
-앱 실행에는 아래 환경변수가 필요합니다. `.env`(Git 제외)에 두거나 IntelliJ Run Configuration에 입력하세요.
-IntelliJ는 `.env`를 자동으로 읽지 않습니다.
+앱 실행에는 아래 환경변수가 필요합니다. 프로젝트 루트의 `.env`(Git 제외)를 앱이 직접 읽으므로 IntelliJ, VS Code, 터미널 어디서 실행해도 됩니다.
+OS 환경변수나 Run Configuration 값이 있으면 그쪽이 우선합니다. `.env`에는 `KEY=값` 형식으로 쓰고 따옴표는 쓰지 마세요.
 
 ```text
 DB_URL=jdbc:postgresql://<pooler-호스트>:5432/postgres

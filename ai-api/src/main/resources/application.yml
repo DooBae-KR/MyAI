@@ -7,6 +7,10 @@ server:
       force: true
 
 spring:
+  config:
+    # .env를 IDE/터미널 구분 없이 읽는다. 실행 위치가 루트일 때와 ai-api일 때를 모두 지원.
+    # OS 환경변수가 있으면 그쪽이 우선한다. 값에 따옴표를 쓰지 말 것 (KEY=값)
+    import: optional:file:./.env[.properties],optional:file:../.env[.properties]
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
