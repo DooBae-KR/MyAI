@@ -3,6 +3,7 @@ import { useHashRoute, useLoad } from './hooks'
 import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
 import { NextActionPanel } from './NextActionPanel'
+import { PatternsPage } from './PatternsPage'
 import { SettingsPage } from './SettingsPage'
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
         <a href="#/" className="brand">Personal AI</a>
         <span className="muted">학습 Dashboard</span>
         <nav className="spacer">
+          <a href="#/patterns" className="nav-link">사고 패턴</a>
           <a href="#/settings" className="llm-badge" aria-label="LLM 설정">
             {llm.data ? `${PROVIDER_LABEL[llm.data.provider]} · ${modelName(llm.data.activeModel)}` : '설정'}
           </a>
@@ -21,6 +23,7 @@ export default function App() {
       </header>
       <main>
         {route.page === 'settings' && <SettingsPage onSaved={llm.reload} />}
+        {route.page === 'patterns' && <PatternsPage />}
         {route.page === 'goal' && <GoalPage goalId={route.goalId} />}
         {route.page === 'list' && <GoalList />}
       </main>

@@ -91,3 +91,16 @@ button:not(.primary):disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 520px) { .top { flex-wrap: wrap; } .top .muted { display: none; } }
 .detect { margin: 6px 0 14px; display: grid; gap: 6px; justify-items: start; }
 .detect code { word-break: break-all; }
+.top nav { display: flex; gap: 8px; align-items: center; }
+.nav-link { font-size: .85rem; text-decoration: none; padding: 3px 8px; }
+.patterns { list-style: none; padding: 0; display: grid; gap: 12px; margin-top: 14px; }
+.pattern { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: grid; gap: 8px; justify-items: start; }
+.pattern .card-head { width: 100%; } .pattern p { margin: 0; }
+.dismissed-card { opacity: .7; }
+.conf { width: 100%; display: grid; gap: 4px; }
+.strategy { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: .92rem; width: 100%; }
+.evidence { list-style: none; padding: 0; display: grid; gap: 8px; margin: 8px 0 0; }
+.evidence blockquote { margin: 0; padding-left: 10px; border-left: 3px solid var(--accent); }
+.badge.pat-supported { border-color: var(--accent); color: var(--accent); }
+.badge.pat-hypothesis { border-color: var(--mid); color: var(--mid); }
+.dismissed { margin-top: 18px; } .dismissed summary { cursor: pointer; color: var(--muted); }

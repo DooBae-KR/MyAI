@@ -34,3 +34,5 @@ export const PROVIDER_LABEL = { OLLAMA: 'Ollama (로컬)', CLAUDE: 'Claude (API)
 export const CLAUDE_MODEL_SUGGESTIONS = ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-haiku-4-5-20251001']
 export const CLAUDE_CODE_MODEL_SUGGESTIONS = ['sonnet', 'opus', 'haiku']
 export const modelName = (m: string | null) => m ?? '기본 모델'
+
+export const PATTERN_STATUS_LABEL = { HYPOTHESIS: '가설', SUPPORTED: '반복 관찰됨', DISMISSED: '기각됨' } as const

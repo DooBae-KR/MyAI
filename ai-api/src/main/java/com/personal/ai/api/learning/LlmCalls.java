@@ -8,11 +8,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.function.Supplier;
 
 /** Agent 호출 실패를 HTTP 상태로 옮긴다: 응답 형식 위반 502, LLM 연결 실패 503. */
-final class LlmCalls {
+public final class LlmCalls {
 
     private LlmCalls() {}
 
-    static <T> T run(Supplier<T> call) {
+    public static <T> T run(Supplier<T> call) {
         try {
             return call.get();
         } catch (AgentResponseException e) {

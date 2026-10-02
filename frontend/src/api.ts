@@ -132,3 +132,34 @@ export const updateLlmSettings = (body: { provider: Provider; ollamaModel: strin
   })
 export const testLlm = () => post<LlmTestResult>('/api/settings/llm/test')
 export const refreshClaudeCode = () => post<LlmSettings>('/api/settings/llm/claude-code/refresh')
+
+export type PatternStatus = 'HYPOTHESIS' | 'SUPPORTED' | 'DISMISSED'
+
+export interface PatternView {
+  id: number
+  name: string
+  description: string | null
+  status: PatternStatus
+  confidence: number // 0.00~1.00
+  evidenceCount: number
+  firstObservedAt: string
+  lastObservedAt: string
+  improvementStrategy: string | null
+  evidence: { answerId: number; quote: string; note: string | null }[]
+}
+
+export interface PatternAnalysis {
+  analyzedAnswers: number
+  newPatterns: number
+  updatedPatterns: number
+  message: string | null
+}
+
+export const fetchPatterns = () => request<PatternView[]>('/api/learning/patterns')
+export const analyzePatterns = () => post<PatternAnalysis>('/api/learning/patterns/analyze')
+export const updatePattern = (id: number, status: 'DISMISSED' | 'HYPOTHESIS') =>
+  request<PatternView>(`/api/learning/patterns/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
