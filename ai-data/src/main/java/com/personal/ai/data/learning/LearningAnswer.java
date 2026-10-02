@@ -18,7 +18,6 @@ public class LearningAnswer {
     @JoinColumn(name = "ASSESSMENT_ID")
     private Assessment assessment;
 
-    @Lob
     @Column(nullable = false)
     private String answerText;
 

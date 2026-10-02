@@ -18,7 +18,7 @@ ai-api    PersonalAiApplication, AiController, AiService, McpController
 ```text
 ai-core      계약 + 순수 도메인 타입 (enum, 값 객체). Spring/JPA 의존 없음      [있음]
 ai-llm       LLM Adapter (Ollama, Claude). 외부 API 호출은 여기만             [있음]
-ai-data      JPA 엔티티, Repository, Flyway 마이그레이션 (Oracle)              [Step 3 신규]
+ai-data      JPA 엔티티, Repository, Flyway 마이그레이션 (PostgreSQL/Supabase)              [Step 3 신규]
 ai-agent     Agent + Prompt 로딩 + JSON 응답 검증. DB를 모른다                 [Step 5 신규]
 ai-api       REST/MCP, 서비스(Agent 호출 → 검증 → ai-data 저장 조율)           [있음]
 frontend/    React (Vite + TypeScript)                                        [Step 7 신규]
@@ -68,12 +68,13 @@ ai-api     com.personal.ai.api.learning    Controller / Service / DTO
 - 점수는 컬럼을 늘리지 않고 JSON 한 컬럼에 둔다 (평가 항목이 바뀌어도 스키마 고정).
 - Subject는 enum이 아니라 테이블이다 (임의 분야 확장).
 
-## 6. Oracle 23.2 규칙
+## 6. DB: Supabase(PostgreSQL) 규칙
 
-- 테이블/컬럼 접두어로 예약어 회피: `LEARNING_*`, `difficulty_level` (`USER`, `LEVEL`, `SESSION`, `COMMENT` 금지)
-- ID는 `GENERATED ALWAYS AS IDENTITY`, boolean은 `BOOLEAN`, 구조화 응답은 네이티브 `JSON`, 긴 텍스트는 `CLOB`
-- 스키마는 Flyway만으로 변경 (`ddl-auto=none`). `validate`는 Oracle `NUMBER`/`JSON` 타입 비교에서 오탐할 수 있어 쓰지 않고, 매핑은 Testcontainers 통합 테스트가 검증한다
-- 통합 테스트는 Testcontainers `gvenzl/oracle-free:23-slim`
+- 앱은 JDBC로 직접 접속한다. 테이블은 **전용 스키마 `personal_ai`** 에 둔다. Supabase API(PostgREST)는 기본적으로 `public`만 노출하므로 학습 기록이 API로 열리지 않는다.
+- ID는 `BIGINT GENERATED ALWAYS AS IDENTITY`, 구조화 응답은 `JSONB`, 긴 텍스트는 `TEXT`
+- 스키마는 Flyway만으로 변경 (`ddl-auto=none`). 매핑은 Testcontainers(`postgres:16-alpine`) 통합 테스트가 검증한다
+- 접속 정보는 환경변수 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`로만 주입하고 Git에 올리지 않는다
+- Supabase pooler를 Transaction 모드(6543)로 쓰면 JDBC URL에 `prepareThreshold=0`이 필요하다. Session 모드(5432)는 그대로 쓴다
 
 ## 7. Agent / Prompt 규칙 (Step 5 대비)
 
@@ -94,4 +95,4 @@ ai-api     com.personal.ai.api.learning    Controller / Service / DTO
 |---|---|---|
 | User 테이블 | **만들지 않는다** | 단일 사용자 개인 비서. 다중 사용자가 필요해질 때 마이그레이션으로 추가 |
 | ai-memory 모듈 | **Phase 6까지 미룬다** | 지금은 ai-data 조회로 충분 |
-| JPA vs JdbcTemplate | **Spring Data JPA** | 엔티티 관계가 많고 Oracle 방언 지원이 성숙 |
+| JPA vs JdbcTemplate | **Spring Data JPA** | 엔티티 관계가 많고 PostgreSQL 방언 지원이 성숙 |

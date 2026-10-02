@@ -77,3 +77,16 @@ claude mcp add --transport http personal-ai http://localhost:8080/mcp --header "
 ```
 
 외부에 노출하면 LLM 호출 비용이 발생하므로 `MCP_TOKEN`을 반드시 설정하세요.
+
+## 데이터베이스 (Supabase / PostgreSQL)
+
+앱 실행에는 아래 환경변수가 필요합니다. `.env`(Git 제외)에 두거나 IntelliJ Run Configuration에 입력하세요.
+IntelliJ는 `.env`를 자동으로 읽지 않습니다.
+
+```text
+DB_URL=jdbc:postgresql://<pooler-호스트>:5432/postgres
+DB_USERNAME=postgres.<프로젝트-ref>
+DB_PASSWORD=<비밀번호>
+```
+
+테이블은 `personal_ai` 스키마에 Flyway(`ai-data/src/main/resources/db/migration`)로 생성됩니다.

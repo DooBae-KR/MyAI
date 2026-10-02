@@ -11,13 +11,13 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.oracle.OracleContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 실제 Oracle(Testcontainers)에서 Flyway 마이그레이션과 JPA 매핑을 함께 검증한다. Docker가 없으면 건너뛴다. */
+/** 실제 PostgreSQL(Testcontainers)에서 Flyway 마이그레이션과 JPA 매핑을 함께 검증한다. Docker가 없으면 건너뛴다. */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
@@ -25,7 +25,7 @@ class LearningRepositoryTest {
 
     @Container
     @ServiceConnection
-    static OracleContainer oracle = new OracleContainer("gvenzl/oracle-free:23-slim");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired TestEntityManager em;
     @Autowired LearningSubjectRepository subjects;
