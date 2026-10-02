@@ -31,6 +31,9 @@ public class CodingSubmission {
     @JdbcTypeCode(SqlTypes.JSON)
     private String review;
 
+    /** 사고 패턴 분석에 쓰인 시각. null이면 아직 분석 전. */
+    private LocalDateTime analyzedAt;
+
     @Column(insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -50,5 +53,7 @@ public class CodingSubmission {
     public String getCode() { return code; }
     public String getExplanation() { return explanation; }
     public String getReview() { return review; }
+    public LocalDateTime getAnalyzedAt() { return analyzedAt; }
+    public void markAnalyzed() { this.analyzedAt = LocalDateTime.now(); }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

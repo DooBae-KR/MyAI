@@ -3,12 +3,15 @@ package com.personal.ai.api.pattern;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personal.ai.agent.AgentResponseException;
 import com.personal.ai.agent.evaluator.DiagnosticQuestion;
+import com.personal.ai.agent.codingtest.CodingTestAgent;
+import com.personal.ai.agent.codingtest.ReviewContent;
 import com.personal.ai.agent.evaluator.DiagnosticQuiz;
 import com.personal.ai.agent.pattern.*;
 import com.personal.ai.api.pattern.PatternDtos.*;
 import com.personal.ai.core.learning.AssessmentType;
 import com.personal.ai.core.learning.Level;
 import com.personal.ai.core.learning.PatternStatus;
+import com.personal.ai.data.codingtest.*;
 import com.personal.ai.data.learning.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,10 +32,11 @@ class PatternServiceTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final LearningAnswerRepository answers = mock(LearningAnswerRepository.class);
+    private final CodingSubmissionRepository submissions = mock(CodingSubmissionRepository.class);
     private final ThinkingPatternRepository patterns = mock(ThinkingPatternRepository.class);
     private final PatternEvidenceRepository evidence = mock(PatternEvidenceRepository.class);
     private final PatternAnalyzerAgent agent = mock(PatternAnalyzerAgent.class);
-    private final PatternService service = new PatternService(answers, patterns, evidence, agent, mapper,
+    private final PatternService service = new PatternService(answers, submissions, patterns, evidence, agent, mapper,
             new TransactionTemplate(mock(PlatformTransactionManager.class)));
 
     private LearningAnswer answer(long id, int questionId, String text) throws Exception {
@@ -48,7 +52,7 @@ class PatternServiceTest {
 
     private PatternAnalysis analysis(String name, long... answerIds) {
         List<PatternEvidenceItem> items = java.util.Arrays.stream(answerIds)
-                .mapToObj(id -> new PatternEvidenceItem(id, "인용" + id + "번 답변", "근거")).toList();
+                .mapToObj(id -> new PatternEvidenceItem("A" + id, "인용" + id + "번 답변", "근거")).toList();
         return new PatternAnalysis("1", List.of(new PatternObservation(name, "압축하는 경향이 있을 수 있다.", "10개 답변에서 4단계로 쓴다.", items)));
     }
 
@@ -80,9 +84,11 @@ class PatternServiceTest {
         assertEquals(3, response.analyzedAnswers());
         assertEquals(1, response.newPatterns());
         // 에이전트에는 답변과 문제 맥락, 채점 결과가 전달되고 채점 기준(keyPoints)은 포함되지 않는다
-        ArgumentCaptor<List<AnswerForAnalysis>> sent = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<AnalysisItem>> sent = ArgumentCaptor.forClass(List.class);
         verify(agent).analyze(sent.capture(), any(), any());
-        AnswerForAnalysis first = sent.getValue().get(0);
+        AnalysisItem first = sent.getValue().get(0);
+        assertEquals("A1", first.itemId());
+        assertEquals("ANSWER", first.kind());
         assertEquals("비동기", first.area());
         assertEquals("Promise란?", first.question());
         assertEquals(60, first.score());
@@ -166,5 +172,89 @@ class PatternServiceTest {
         when(patterns.findById(404L)).thenReturn(Optional.empty());
         assertEquals(HttpStatus.NOT_FOUND, HttpStatus.valueOf(assertThrows(ResponseStatusException.class,
                 () -> service.update(404L, new UpdateRequest("DISMISSED"))).getStatusCode().value()));
+    }
+
+    private CodingSubmission submission(long id, String code, String explanation) throws Exception {
+        CodingProblem problem = new CodingProblem("미로 탐색").details("예시", null, null, null, "Lv.2", "그래프", "BFS", "Queue", "Java", "최소 이동 횟수를 구한다.", 40);
+        List<ReviewContent.Comparison> comps = CodingTestAgent.COMPARISON_ITEMS.stream()
+                .map(i -> new ReviewContent.Comparison(i, "DFS", "BFS", "DIFFERENT", "최단거리이므로 BFS가 적합")).toList();
+        ReviewContent review = new ReviewContent("1", "DFS로 모든 경로 탐색", "BFS 권장", comps, List.of("방문 해제로 중복 탐색"), List.of(), List.of(), "BFS를 권한다");
+        CodingSubmission s = new CodingSubmission(problem, "Java", code, explanation, mapper.writeValueAsString(review));
+        ReflectionTestUtils.setField(s, "id", id);
+        return s;
+    }
+
+    @Test
+    void codingSubmissionsAreAnalyzedWithLearnerTextAsAnswerAndAiReviewOnlyAsContext() throws Exception {
+        CodingSubmission sub = submission(7, "dfs(nx, ny, cnt + 1);\nvisited[nx][ny] = false;", "모든 경로를 탐색하면 된다");
+        LearningAnswer a1 = answer(1, 1, "비동기 결과를 담는 객체");
+        when(answers.findTop30ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of(a1));
+        when(submissions.findTop10ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of(sub));
+        when(patterns.findAll()).thenReturn(List.of());
+        when(agent.analyze(any(), any(), any())).thenReturn(new PatternAnalysis("2", List.of(new PatternObservation(
+                "DFS 먼저 고르는 경향", "d", "5개 문제에서 최단거리인지 먼저 적는다.",
+                List.of(new PatternEvidenceItem("S7", "dfs(nx, ny, cnt + 1);", "DFS 재귀"), new PatternEvidenceItem("A1", "비동기 결과", "압축"))))));
+        ThinkingPattern[] saved = new ThinkingPattern[1];
+        when(patterns.save(any())).thenAnswer(i -> {
+            ThinkingPattern p = i.getArgument(0);
+            ReflectionTestUtils.setField(p, "id", 9L);
+            saved[0] = p;
+            return p;
+        });
+        when(patterns.findByNameIgnoreCase(any())).thenReturn(Optional.empty());
+        when(answers.getReferenceById(1L)).thenReturn(a1);
+        when(submissions.getReferenceById(7L)).thenReturn(sub);
+        when(answers.countByAnalyzedAtIsNotNull()).thenReturn(1L);
+        when(submissions.countByAnalyzedAtIsNotNull()).thenReturn(1L);
+        when(evidence.countByPatternId(9L)).thenReturn(2);
+        when(patterns.findByStatusNot(PatternStatus.DISMISSED)).thenAnswer(i -> List.of(saved[0]));
+
+        AnalysisResponse response = service.analyze();
+
+        assertEquals(1, response.analyzedAnswers());
+        assertEquals(1, response.analyzedSubmissions());
+        // 에이전트에 가는 코드 항목: answer는 학습자의 글(접근 설명+코드)뿐이고, AI 리뷰는 feedback에만 있다
+        ArgumentCaptor<List<AnalysisItem>> sent = ArgumentCaptor.forClass(List.class);
+        verify(agent).analyze(sent.capture(), any(), any());
+        AnalysisItem code = sent.getValue().stream().filter(i -> i.itemId().equals("S7")).findFirst().orElseThrow();
+        assertEquals("CODE", code.kind());
+        assertEquals("그래프", code.area());
+        assertTrue(code.answer().contains("[접근 설명] 모든 경로를 탐색하면 된다") && code.answer().contains("[코드] dfs(nx, ny, cnt + 1);"));
+        assertFalse(code.answer().contains("BFS를 권한다")); // AI 리뷰는 학습자 글에 섞이지 않는다
+        assertTrue(code.feedback().contains("BFS를 권한다") && code.feedback().contains("방문 해제로 중복 탐색"));
+        // 근거는 출처별로 저장되고, 둘 다 분석함 표시, 신뢰도는 (답변+코딩 풀이) 전체 수로 계산
+        ArgumentCaptor<PatternEvidence> evidences = ArgumentCaptor.forClass(PatternEvidence.class);
+        verify(evidence, times(2)).save(evidences.capture());
+        assertEquals(1, evidences.getAllValues().stream().filter(e -> e.getSubmission() != null && e.getAnswer() == null).count());
+        assertEquals(1, evidences.getAllValues().stream().filter(e -> e.getAnswer() != null && e.getSubmission() == null).count());
+        assertNotNull(sub.getAnalyzedAt());
+        assertNotNull(a1.getAnalyzedAt());
+        assertEquals(PatternConfidence.confidence(2, 2), saved[0].getConfidence());
+        assertEquals(PatternStatus.HYPOTHESIS, saved[0].getStatus()); // 근거 2개(<3)라 아직 가설
+    }
+
+    @Test
+    void longCodeIsTruncatedForTheModelAndSubmissionEvidenceShowsProblemTitle() throws Exception {
+        CodingSubmission sub = submission(7, "x".repeat(PatternService.MAX_CODE_CHARS_IN_PROMPT + 500), null);
+        when(answers.findTop30ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of());
+        when(submissions.findTop10ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of(sub));
+        when(patterns.findAll()).thenReturn(List.of());
+        when(agent.analyze(any(), any(), any())).thenReturn(new PatternAnalysis("2", List.of()));
+        when(submissions.getReferenceById(7L)).thenReturn(sub);
+
+        service.analyze();
+
+        ArgumentCaptor<List<AnalysisItem>> sent = ArgumentCaptor.forClass(List.class);
+        verify(agent).analyze(sent.capture(), any(), any());
+        assertEquals("[코드] ".length() + PatternService.MAX_CODE_CHARS_IN_PROMPT, sent.getValue().get(0).answer().length());
+
+        // 목록에서는 코딩 풀이 근거가 문제 제목과 함께 보인다
+        ThinkingPattern p = new ThinkingPattern("패턴", "d", "s");
+        ReflectionTestUtils.setField(p, "id", 3L);
+        when(patterns.findAllByOrderByStatusDescConfidenceDescIdAsc()).thenReturn(List.of(p));
+        when(evidence.findTop5ByPatternIdOrderByIdDesc(3L)).thenReturn(List.of(PatternEvidence.fromSubmission(p, sub, "dfs(...)", "DFS")));
+        Evidence e = service.list().get(0).evidence().get(0);
+        assertEquals("SUBMISSION", e.source());
+        assertEquals("코딩 풀이: 미로 탐색", e.label());
     }
 }

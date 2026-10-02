@@ -145,11 +145,12 @@ export interface PatternView {
   firstObservedAt: string
   lastObservedAt: string
   improvementStrategy: string | null
-  evidence: { answerId: number; quote: string; note: string | null }[]
+  evidence: { source: 'ANSWER' | 'SUBMISSION'; itemId: number; label: string; quote: string; note: string | null }[]
 }
 
 export interface PatternAnalysis {
   analyzedAnswers: number
+  analyzedSubmissions: number
   newPatterns: number
   updatedPatterns: number
   message: string | null
