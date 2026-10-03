@@ -208,11 +208,10 @@ STOCK_CRON=0 0 9 * * MON-FRI                               # 선택. Asia/Seoul 
 
 ### API 키 없이: Claude Code 스킬 `stock-recommend`
 
-위 Spring 방식은 LLM 호출에 Ollama나 Claude API 키가 필요합니다. Claude Code 구독만 쓰려면 `.claude/skills/stock-recommend`를 사용합니다. 스크립트가 시세 조회와 Discord 전송을 맡고, 판단은 Claude Code 세션이 합니다.
+위 Spring 방식은 LLM 호출에 Ollama나 Claude API 키가 필요합니다. Claude Code 구독만 쓰려면 `.claude/skills/stock-recommend`를 사용합니다. 종목을 지정하지 않아도 `universe.txt`(후보 55개, 수정 가능)를 스크립트가 훑고, Claude Code 세션이 3~5개를 직접 골라 근거와 함께 Discord로 보냅니다.
 
 ```bash
 export DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-export STOCK_WATCHLIST=453810.KS,SPY
 ```
 
-Claude Code에서 `/stock-recommend`를 실행합니다. 정기 발송은 Claude Code 루틴(예약 작업)이 이 스킬을 호출하게 만듭니다.
+Claude Code에서 `/stock-recommend`를 실행합니다. 종목을 직접 말하면 그 종목만 분석합니다. 정기 발송은 Claude Code 루틴(예약 작업)이 이 스킬을 호출하게 만듭니다.
