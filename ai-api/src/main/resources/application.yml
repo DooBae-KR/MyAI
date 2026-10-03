@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}   # 배포 플랫폼(Cloud Run, Render 등)이 PORT를 정해 준다
   # 기본은 내 PC에서만 접속 가능. /api에는 인증이 없으니 다른 PC에서 접속해야 할 때만 SERVER_ADDRESS=0.0.0.0 으로 바꿀 것
   address: ${SERVER_ADDRESS:127.0.0.1}
   error:
@@ -47,6 +47,8 @@ claude:
   model: ${CLAUDE_MODEL:claude-sonnet-5-5}
 
 app:
+  # true면 외부에 열려 있어도 APP_TOKEN 없이 시작한다(StartupSafetyCheck). 같은 Wi-Fi에서만 쓰는 등 의도한 경우에만
+  allow-no-token: ${APP_ALLOW_NO_TOKEN:false}
   # 비어 있으면 /api 인증 없음. 서버를 외부(폰 앱)에 공개하면 반드시 설정 (Authorization: Bearer <값>)
   token: ${APP_TOKEN:}
 
@@ -68,6 +70,10 @@ notion:
 discord:
   # Incoming Webhook 주소(비밀). 비어 있으면 알림 끔
   webhook-url: ${DISCORD_WEBHOOK_URL:}
+  # 슬래시 명령(/today /next /stats)용. Discord 개발자 포털의 Public Key(서명 검증용, 비밀은 아님). 비어 있으면 명령 끔
+  public-key: ${DISCORD_PUBLIC_KEY:}
+  # 명령을 쓸 수 있는 내 Discord 사용자 ID(개발자 모드에서 프로필 → ID 복사). 비어 있으면 모든 명령을 거절
+  allowed-user-id: ${DISCORD_ALLOWED_USER_ID:}
   cron: ${DISCORD_CRON:0 0 21 * * *}   # 매일 21:00
   zone: ${DISCORD_ZONE:Asia/Seoul}
 

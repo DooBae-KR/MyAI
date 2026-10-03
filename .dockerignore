@@ -1,0 +1,11 @@
+.git
+.gradle
+**/build
+**/node_modules
+frontend/dist
+ai-api/src/main/resources/static
+frontend/android
+# 비밀 값은 이미지에 넣지 않는다 (환경 변수로 주입)
+.env
+.env.*
+*.log

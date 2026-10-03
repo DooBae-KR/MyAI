@@ -273,7 +273,7 @@ Spring을 서버에 두고 폰이 그 주소로 접속하는 구성입니다.
 1. 서버 `.env`에 설정:
    ```
    SERVER_ADDRESS=0.0.0.0        # 기본은 127.0.0.1(내 PC 전용)
-   APP_TOKEN=<길고 무작위한 값>   # /api/** 에 Authorization: Bearer 를 요구 (비면 인증 없음 + 경고 로그)
+   APP_TOKEN=<길고 무작위한 값>   # /api/** 에 Authorization: Bearer 를 요구. 외부 주소(0.0.0.0)에서 비워 두면 앱이 시작을 거부합니다
    MCP_TOKEN=<다른 무작위 값>     # /mcp 도 열려 있다면
    ```
 2. **HTTPS 필수**: Android Chrome은 HTTPS(또는 localhost)에서만 "앱 설치"를 제공합니다. Caddy/nginx 리버스 프록시나 Cloudflare Tunnel·Tailscale Funnel로 `https://내도메인`을 만드세요.
@@ -326,7 +326,7 @@ GET /api/stats   합계(목표·완료 단계·답변·코딩 문제·풀이 제
 - `discord.com`/`discordapp.com`의 웹후크 주소가 아니면 알림을 끕니다. 전송 실패 메시지에는 URL이 들어가지 않습니다.
 - 본문에 `@everyone` 등이 섞여도 아무도 호출하지 않도록 멘션을 막아 둡니다.
 - 서버가 꺼져 있던 시간의 알림은 보내지 않습니다(밀린 알림 없음).
-- 명령어(`/next` 등)로 Discord에서 질의하는 기능은 아직 없습니다(봇 계정 필요).
+- Discord에서 `/today`, `/next`, `/stats`로 조회하려면 아래 "Discord 슬래시 명령"을 보세요.
 
 ## CI와 비밀 값 검사
 
@@ -452,4 +452,65 @@ GET /api/stats/insights   확인 문제 성적, 영역 변화, 알고리즘별 �
 - 자동 기록은 **하루에 한 번만** 만듭니다(마지막으로 남긴 날짜를 DB에 기록). 실패하면 날짜를 기록하지 않아 다음 실행 때 다시 시도합니다. 수동 테스트는 항상 새 페이지를 만듭니다.
 - 토큰과 데이터베이스 ID 형식이 틀리면 시작을 막지 않고 기능만 끕니다. 오류 메시지에는 HTTP 상태와 Notion이 알려 준 짧은 사유(예: "Name is not a property that exists.")만 담고 토큰은 넣지 않습니다.
 - 서버가 꺼져 있던 날의 로그는 만들지 않습니다.
+
+## Discord 슬래시 명령 (/today, /next, /stats)
+
+Discord에서 학습 현황을 바로 조회합니다. 봇을 계속 켜 두는 방식이 아니라 **Discord가 서버의 HTTPS 주소를 호출하는 Interactions 엔드포인트**라서 서버가 인터넷에 공개된 뒤(아래 "운영 배포")에 쓸 수 있습니다.
+
+| 명령 | 내용 |
+|---|---|
+| `/today` | 오늘의 학습 체크리스트(☑/□) |
+| `/next` | 다음 할 일 하나 |
+| `/stats` | 완료 Step, 학습 시간, 오늘 활동, 복습할 Step 수 |
+
+1. [Discord 개발자 포털](https://discord.com/developers/applications) → New Application → General Information의 **Public Key**를 복사합니다.
+2. 서버 환경 변수:
+   ```
+   DISCORD_PUBLIC_KEY=<Public Key>              # 서명 검증용(비밀은 아님)
+   DISCORD_ALLOWED_USER_ID=<내 Discord 사용자 ID> # 설정 → 고급 → 개발자 모드 켠 뒤 프로필 → ID 복사
+   ```
+3. 서버를 띄운 뒤, 포털의 **Interactions Endpoint URL**에 `https://<서버 주소>/discord/interactions`를 저장합니다(저장할 때 Discord가 확인 요청을 보내므로 서버가 이미 떠 있어야 합니다).
+4. 명령을 등록합니다(한 번만. 봇 토큰은 이 호출에만 쓰고 앱에는 넣지 않습니다. `PUT`은 이 앱의 기존 전역 명령을 이 목록으로 덮어씁니다):
+   ```bash
+   curl -X PUT "https://discord.com/api/v10/applications/$APPLICATION_ID/commands" \
+     -H "Authorization: Bot $BOT_TOKEN" -H "Content-Type: application/json" \
+     -d '[{"name":"today","description":"오늘의 학습 체크리스트"},{"name":"next","description":"다음 할 일 하나"},{"name":"stats","description":"학습 통계 요약"}]'
+   ```
+5. OAuth2 → URL Generator에서 scope `applications.commands`로 만든 주소로 내 서버(또는 DM)에 앱을 추가합니다.
+- **보안**: 요청은 Discord의 Ed25519 서명으로 검증하고(틀리면 401, 5분이 지난 요청은 재전송으로 보고 거절), **허용한 사용자 ID가 아니면 아무 데이터도 주지 않습니다**(`DISCORD_ALLOWED_USER_ID`가 비어 있으면 모든 명령을 거절). 답변은 명령한 사람에게만 보이는(ephemeral) 메시지이고, `DISCORD_PUBLIC_KEY`가 없으면 엔드포인트는 404입니다.
+- LLM을 부르지 않는 조회라 Discord의 3초 제한 안에 답합니다.
+
+## 운영 배포
+
+**Supabase는 이 앱의 DB입니다. 앱 자체(화면 포함)를 올리는 곳이 아닙니다.** 프론트엔드(React)는 빌드해서 Spring Boot 안에 넣고 Spring이 같은 주소에서 함께 서빙하므로, **Spring을 배포하면 프론트엔드도 같이 나갑니다.** Supabase의 Storage와 Edge Functions는 웹사이트(HTML) 호스팅 용도가 아니고 JVM 앱도 실행하지 못하므로, 이 앱은 컨테이너를 돌릴 수 있는 곳(Cloud Run, Fly.io, Render, Railway 등)에 올리고 DB만 Supabase를 씁니다.
+
+```
+폰/브라우저/Discord ──HTTPS──▶ 컨테이너(Spring Boot + 화면) ──▶ Supabase(PostgreSQL)
+```
+
+1. **DB 준비**: 위 "DB 최소 권한 계정"대로 앱 전용 계정(`personal_ai_app`)을 만들고, 마이그레이션용 소유자 계정은 `DB_MIGRATION_*`로 따로 둡니다. Supabase에서는 풀러(pooler)로 접속한다면 **Session 모드** 또는 직접 연결을 쓰세요(Flyway와 JPA는 Transaction 모드 풀러와 잘 맞지 않을 수 있습니다). 사용자 이름 형식은 풀러면 `personal_ai_app.<프로젝트ref>`입니다.
+2. **이미지 빌드**: 저장소 루트의 `Dockerfile`이 프론트엔드 빌드 → 백엔드 빌드 → 실행 이미지까지 한 번에 만듭니다.
+   ```bash
+   docker build -t personal-ai .
+   ```
+3. **환경 변수**(플랫폼의 비밀 값/환경 변수 설정에 넣습니다. 이미지에는 `.env`가 들어가지 않습니다):
+
+   | 변수 | 필수 | 설명 |
+   |---|---|---|
+   | `DB_URL` 또는 `DB_HOST`/`DB_PORT`/`DB_NAME` | ✅ | Supabase 접속 정보 |
+   | `DB_USERNAME`, `DB_PASSWORD` | ✅ | 앱 실행 계정 |
+   | `DB_MIGRATION_USERNAME`, `DB_MIGRATION_PASSWORD` | 권장 | 스키마 변경 권한이 있는 계정(최소 권한 계정을 쓸 때) |
+   | `APP_TOKEN` | ✅ | `/api` 접속 토큰. **비어 있으면 앱이 시작을 거부합니다**(외부에 열려 있으므로) |
+   | `ANTHROPIC_API_KEY` | ✅(LLM) | 서버에서는 Claude Code 로그인(CLI)을 쓸 수 없으므로 API 키를 씁니다. 설정 화면에서 Claude API를 선택하세요 |
+   | `MCP_TOKEN` | 쓸 때 | `/mcp`를 쓸 때 |
+   | `DISCORD_*`, `CALENDAR_TOKEN`, `NOTION_*` | 선택 | 위 각 섹션 참고 |
+
+   `PORT`는 플랫폼이 정해 주면 자동으로 따릅니다(기본 8080). 컨테이너는 `SERVER_ADDRESS=0.0.0.0`으로 뜹니다.
+4. **실행**: 플랫폼의 "Docker 이미지/Dockerfile로 배포"를 쓰고, 헬스 체크 경로는 `/healthz`(인증·DB 없이 `ok`)로 지정합니다. HTTPS와 도메인은 플랫폼이 제공합니다.
+5. **첫 접속**: `https://<도메인>`을 열면 `APP_TOKEN`을 한 번 묻습니다. PWA 설치와 Capacitor APK의 `CAP_SERVER_URL`에도 이 주소를 씁니다.
+6. **확인**: Discord 슬래시 명령, 캘린더 구독, Notion 로그는 이 주소가 생긴 뒤에 설정합니다.
+
+- 첫 배포 때 Flyway가 V1~V8 마이그레이션을 실행합니다(소유자 계정 필요). 이후 새 마이그레이션이 있는 버전을 배포할 때도 같습니다.
+- 서버를 여러 대로 늘리면 같은 일일 알림(Discord/Notion)이 중복될 수 있습니다. 지금은 1대 운영을 가정합니다.
+- 이 Dockerfile은 로컬에서 이미지를 빌드해 확인하지는 못했습니다(빌드 환경에 Docker 데몬이 없었음). 안에서 실행하는 명령(프론트 빌드, `bootJar`, `java -jar`)은 같은 순서로 직접 돌려 확인했습니다.
 
