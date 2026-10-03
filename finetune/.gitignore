@@ -6,3 +6,5 @@ train.jsonl
 val.jsonl
 out/
 *.gguf
+.venv/
+__pycache__/
