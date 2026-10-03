@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """표준입력의 추천 JSON 배열을 Discord 웹훅으로 보낸다. 표준 라이브러리만 사용.
 
-입력: [{"symbol","decision":"BUY|SELL|HOLD","confidence":0.7,"reasoning","stats":"한 줄 요약"}, ...]
+입력: [{"symbol","name"(선택),"decision":"BUY|SELL|HOLD","confidence":0.7,"reasoning","stats":"한 줄 요약"}, ...]
          실패 종목은 {"symbol","error"}
 환경변수: DISCORD_WEBHOOK_URL
 """
@@ -19,7 +19,7 @@ def embed(item):
         return {"title": item["symbol"], "description": f"분석 실패: {item['error']}", "color": 0x95A5A6}
     d = item["decision"].upper()
     return {
-        "title": f"{item['symbol']} — {d} (신뢰도 {round(item['confidence'] * 100)}%)",
+        "title": f"{item.get('name') or item['symbol']} ({item['symbol']}) — {d} (신뢰도 {round(item['confidence'] * 100)}%)",
         "description": f"{item.get('stats', '')}\n{item['reasoning']}".strip()[:4000],
         "color": COLORS.get(d, 0x95A5A6),
     }
