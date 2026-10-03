@@ -205,3 +205,14 @@ STOCK_CRON=0 0 9 * * MON-FRI                               # 선택. Asia/Seoul 
 ## Claude Code 스킬: caveman
 
 `.claude/skills/`에 [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)(Apache-2.0)의 `caveman`, `ultracave`, `megacave` 스킬을 그대로 넣었습니다. 출력 토큰을 줄이려고 군더더기 없이 짧게 답하게 합니다. Claude Code에서 `/caveman`으로 켜고 "stop caveman"으로 끕니다. 라이선스는 `.claude/skills/CAVEMAN-LICENSE`.
+
+### API 키 없이: Claude Code 스킬 `stock-recommend`
+
+위 Spring 방식은 LLM 호출에 Ollama나 Claude API 키가 필요합니다. Claude Code 구독만 쓰려면 `.claude/skills/stock-recommend`를 사용합니다. 스크립트가 시세 조회와 Discord 전송을 맡고, 판단은 Claude Code 세션이 합니다.
+
+```bash
+export DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+export STOCK_WATCHLIST=453810.KS,SPY
+```
+
+Claude Code에서 `/stock-recommend`를 실행합니다. 정기 발송은 Claude Code 루틴(예약 작업)이 이 스킬을 호출하게 만듭니다.

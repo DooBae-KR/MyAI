@@ -14,3 +14,4 @@ node_modules/
 frontend/dist/
 ai-agent/build/
 ai-data/build/
+__pycache__/
