@@ -173,6 +173,15 @@ export interface PatternAnalysis {
   message: string | null
 }
 
+export interface Stats {
+  totals: { goals: number; stepsTotal: number; stepsCompleted: number; answers: number; submissions: number; problems: number }
+  activity: { date: string; answers: number; submissions: number }[]
+  codingByCategory: { name: string; count: number }[]
+  patternsByStatus: { name: PatternStatus; count: number }[]
+}
+
+export const fetchStats = () => request<Stats>('/api/stats')
+
 export const fetchPatterns = () => request<PatternView[]>('/api/learning/patterns')
 export const analyzePatterns = () => post<PatternAnalysis>('/api/learning/patterns/analyze')
 export const updatePattern = (id: number, status: 'DISMISSED' | 'HYPOTHESIS') =>

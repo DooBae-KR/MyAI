@@ -294,3 +294,13 @@ npx cap open android                                    # Android Studio에서 �
 - Android Studio(JDK 21, Android SDK)가 필요합니다. 서버 주소를 바꾸면 `cap sync`를 다시 하세요. 주소가 담긴 `android/app/src/main/assets/capacitor.config.json`은 Git에 올라가지 않습니다.
 - `appId`는 `kr.doobae.personalai`, 아이콘은 Capacitor 기본값입니다(`android/app/src/main/res`에서 교체).
 - 서버 설정(`SERVER_ADDRESS`, `APP_TOKEN`, HTTPS)은 위 PWA 섹션과 같습니다.
+
+## 학습 통계
+
+헤더의 "통계"(`#/stats`)에서 학습 현황을 한눈에 봅니다. LLM을 호출하지 않는 조회 전용 화면입니다.
+
+```http
+GET /api/stats   합계(목표·완료 단계·답변·코딩 문제·풀이 제출), 최근 14일 하루 활동, 풀이한 문제 분류별 개수, 사고 패턴 상태별 개수
+```
+
+- 하루 활동은 진단 답변 + 코딩 풀이 제출 수이고, 날짜는 서버 시간대 기준입니다. 활동이 없는 날도 0으로 표시됩니다.

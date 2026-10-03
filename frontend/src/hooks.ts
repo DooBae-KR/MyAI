@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-export type Route = { page: 'list' } | { page: 'goal'; goalId: number } | { page: 'settings' } | { page: 'patterns' } | { page: 'coding' } | { page: 'problem'; problemId: number }
+export type Route = { page: 'list' } | { page: 'goal'; goalId: number } | { page: 'settings' } | { page: 'patterns' } | { page: 'stats' } | { page: 'coding' } | { page: 'problem'; problemId: number }
 
 /** '#/' 목록, '#/goals/3' 상세, '#/settings' 설정. 화면이 몇 개 안 돼 라우터 라이브러리 없이 해시로 나눈다. */
 export function useHashRoute(): Route {
@@ -10,6 +10,7 @@ export function useHashRoute(): Route {
     const problem = location.hash.match(/^#\/coding\/(\d+)$/)
     if (problem) return { page: 'problem', problemId: Number(problem[1]) }
     if (location.hash === '#/coding') return { page: 'coding' }
+    if (location.hash === '#/stats') return { page: 'stats' }
     if (location.hash === '#/patterns') return { page: 'patterns' }
     return location.hash === '#/settings' ? { page: 'settings' } : { page: 'list' }
   }
