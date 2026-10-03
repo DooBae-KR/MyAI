@@ -304,3 +304,22 @@ GET /api/stats   합계(목표·완료 단계·답변·코딩 문제·풀이 제
 ```
 
 - 하루 활동은 진단 답변 + 코딩 풀이 제출 수이고, 날짜는 서버 시간대 기준입니다. 활동이 없는 날도 0으로 표시됩니다.
+
+## Discord 알림
+
+매일 정해진 시간에 Discord 채널로 "오늘의 학습"(목표별 진행률, 다음 할 단계, 오늘 활동)을 보냅니다.
+**Incoming Webhook**만 쓰므로 봇 계정, 라이브러리, 공개 URL이 필요 없고, 서버가 Discord로 내보내기만 합니다.
+
+1. Discord 채널 설정 → 연동 → 웹후크 → 새 웹후크 → URL 복사
+2. `.env`에 설정 (URL은 비밀번호와 같습니다. 채팅·Git에 올리지 마세요):
+   ```
+   DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+   DISCORD_CRON=0 0 21 * * *     # 선택. 기본 매일 21:00
+   DISCORD_ZONE=Asia/Seoul       # 선택. 기본 Asia/Seoul
+   ```
+3. 앱을 재시작하고 확인: `POST /api/notifications/discord/test` (지금 한 번 전송), `GET /api/notifications/discord` (활성 여부)
+
+- `discord.com`/`discordapp.com`의 웹후크 주소가 아니면 알림을 끕니다. 전송 실패 메시지에는 URL이 들어가지 않습니다.
+- 본문에 `@everyone` 등이 섞여도 아무도 호출하지 않도록 멘션을 막아 둡니다.
+- 서버가 꺼져 있던 시간의 알림은 보내지 않습니다(밀린 알림 없음).
+- 명령어(`/next` 등)로 Discord에서 질의하는 기능은 아직 없습니다(봇 계정 필요).

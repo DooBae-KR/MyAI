@@ -47,6 +47,12 @@ app:
   # 비어 있으면 /api 인증 없음. 서버를 외부(폰 앱)에 공개하면 반드시 설정 (Authorization: Bearer <값>)
   token: ${APP_TOKEN:}
 
+discord:
+  # Incoming Webhook 주소(비밀). 비어 있으면 알림 끔
+  webhook-url: ${DISCORD_WEBHOOK_URL:}
+  cron: ${DISCORD_CRON:0 0 21 * * *}   # 매일 21:00
+  zone: ${DISCORD_ZONE:Asia/Seoul}
+
 mcp:
   # 비어 있으면 인증 없음. 외부에 노출하면 반드시 설정 (Authorization: Bearer <값>)
   token: ${MCP_TOKEN:}
