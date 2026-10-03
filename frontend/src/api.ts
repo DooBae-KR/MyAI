@@ -178,6 +178,8 @@ export interface Stats {
   activity: { date: string; answers: number; submissions: number }[]
   codingByCategory: { name: string; count: number }[]
   patternsByStatus: { name: PatternStatus; count: number }[]
+  diagnosticTrends: { goalId: number; subject: string; points: { date: string; correctness: number }[] }[]
+  weakAreas: { subject: string; area: string; score: number }[]
 }
 
 export const fetchStats = () => request<Stats>('/api/stats')

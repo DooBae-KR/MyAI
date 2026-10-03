@@ -130,3 +130,5 @@ textarea.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mono
 .activity .col { width: 100%; min-height: 2px; background: var(--accent); border-radius: 4px 4px 0 0; }
 .cats { list-style: none; padding: 0; display: grid; gap: 8px; }
 .cats li { display: grid; grid-template-columns: minmax(80px, 160px) 1fr 2.5rem; gap: 10px; align-items: center; }
+.trend { margin: 0 0 12px; } .trend svg { width: 100%; max-width: 420px; height: auto; display: block; }
+.trend .axis { stroke: var(--border); } .trend .line { stroke: var(--accent); stroke-width: 2; } .trend .dot { fill: var(--accent); }

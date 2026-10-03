@@ -6,7 +6,17 @@ import static org.mockito.Mockito.when;
 
 import com.personal.ai.core.learning.PatternStatus;
 import com.personal.ai.core.learning.StepStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.personal.ai.agent.evaluator.AreaScore;
+import com.personal.ai.agent.evaluator.Criteria;
+import com.personal.ai.agent.evaluator.GradingResult;
+import com.personal.ai.core.learning.AssessmentType;
+import com.personal.ai.core.learning.Level;
 import com.personal.ai.data.codingtest.CodingProblemRepository;
+import com.personal.ai.data.learning.Assessment;
+import com.personal.ai.data.learning.AssessmentRepository;
+import com.personal.ai.data.learning.LearningGoal;
+import com.personal.ai.data.learning.LearningSubject;
 import com.personal.ai.data.codingtest.CodingSubmissionRepository;
 import com.personal.ai.data.learning.LearningAnswerRepository;
 import com.personal.ai.data.learning.LearningGoalRepository;
@@ -27,8 +37,37 @@ class StatsServiceTest {
     private final CodingSubmissionRepository submissions = mock(CodingSubmissionRepository.class);
     private final CodingProblemRepository problems = mock(CodingProblemRepository.class);
     private final ThinkingPatternRepository patterns = mock(ThinkingPatternRepository.class);
+    private final AssessmentRepository assessments = mock(AssessmentRepository.class);
+    private final ObjectMapper mapper = new ObjectMapper();
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC);
-    private final StatsService service = new StatsService(goals, steps, answers, submissions, problems, patterns, clock);
+    private final StatsService service = new StatsService(goals, steps, answers, submissions, problems, patterns, assessments, mapper, clock);
+
+    private Assessment graded(LearningGoal goal, Long id, int correctness, AreaScore... areas) throws Exception {
+        Assessment a = new Assessment(goal, null, AssessmentType.DIAGNOSTIC, "{}");
+        org.springframework.test.util.ReflectionTestUtils.setField(a, "id", id);
+        org.springframework.test.util.ReflectionTestUtils.setField(a, "createdAt", LocalDateTime.parse("2026-10-0" + id + "T09:00:00"));
+        a.setResult(mapper.writeValueAsString(new GradingResult("1", correctness, new Criteria(1, 2, 3, 4, 5, 6),
+                List.of(areas), Level.BEGINNER, List.of(), List.of(), List.of())));
+        return a;
+    }
+
+    @Test
+    void trendsFollowEachDiagnosticAndWeakAreasUseTheLatestOne() throws Exception {
+        LearningGoal goal = mock(LearningGoal.class);
+        when(goal.getId()).thenReturn(7L);
+        when(goal.getSubject()).thenReturn(new LearningSubject("Vue", null));
+        when(assessments.findByTypeAndResultIsNotNullOrderByIdAsc(AssessmentType.DIAGNOSTIC)).thenReturn(List.of(
+                graded(goal, 1L, 35, new AreaScore("비동기", 10), new AreaScore("상태", 90)),
+                graded(goal, 2L, 60, new AreaScore("비동기", 40), new AreaScore("상태", 80))));
+
+        StatsResponse r = service.stats();
+
+        assertEquals(List.of(new StatsResponse.Point("2026-10-01", 35), new StatsResponse.Point("2026-10-02", 60)),
+                r.diagnosticTrends().get(0).points());
+        assertEquals("Vue", r.diagnosticTrends().get(0).subject());
+        assertEquals(List.of(new StatsResponse.WeakArea("Vue", "비동기", 40), new StatsResponse.WeakArea("Vue", "상태", 80)),
+                r.weakAreas());
+    }
 
     @Test
     void aggregatesTotalsActivityAndBreakdowns() {

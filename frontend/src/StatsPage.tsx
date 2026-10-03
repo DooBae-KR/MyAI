@@ -1,6 +1,6 @@
 import { fetchStats, type Stats } from './api'
 import { useLoad } from './hooks'
-import { PATTERN_STATUS_LABEL } from './labels'
+import { PATTERN_STATUS_LABEL, scoreTone } from './labels'
 
 export function StatsPage() {
   const { data, error } = useLoad<Stats>(fetchStats, 'stats')
@@ -49,6 +49,28 @@ function StatsBody({ stats: s }: { stats: Stats }) {
       </section>
 
       <section>
+        <h2>진단 정답률 추이</h2>
+        {s.diagnosticTrends.length === 0 && <p className="muted">채점된 진단이 아직 없습니다. 진단을 다시 받으면 변화가 선으로 보입니다.</p>}
+        {s.diagnosticTrends.map((tr) => <TrendChart key={tr.goalId} trend={tr} />)}
+      </section>
+
+      {s.weakAreas.length > 0 && (
+        <section>
+          <h2>보강이 필요한 영역</h2>
+          <p className="muted small">목표별 가장 최근 진단에서 점수가 낮은 영역입니다.</p>
+          <ul className="cats">
+            {s.weakAreas.map((w) => (
+              <li key={`${w.subject}-${w.area}`}>
+                <span>{w.subject} · {w.area}</span>
+                <div className={`bar ${scoreTone(w.score)}`}><div style={{ width: `${w.score}%` }} /></div>
+                <span className="score">{w.score}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section>
         <h2>풀이한 문제 분류</h2>
         {s.codingByCategory.length === 0 && <p className="muted">아직 제출한 풀이가 없습니다.</p>}
         <ul className="cats">
@@ -79,5 +101,23 @@ function Tile({ label, value, sub }: { label: string; value: number | string; su
       <strong>{value}</strong>
       {sub && <span className="muted small"> {sub}</span>}
     </li>
+  )
+}
+
+function TrendChart({ trend }: { trend: Stats['diagnosticTrends'][number] }) {
+  const w = 300, h = 90, pad = 8
+  const pts = trend.points
+  const x = (i: number) => (pts.length === 1 ? w / 2 : pad + (i * (w - 2 * pad)) / (pts.length - 1))
+  const y = (v: number) => h - pad - (v / 100) * (h - 2 * pad)
+  const label = pts.map((p) => `${p.date} ${p.correctness}점`).join(', ')
+  return (
+    <figure className="trend">
+      <figcaption><strong>{trend.subject}</strong> <span className="muted small">진단 {pts.length}회, 최근 {pts[pts.length - 1].correctness}점</span></figcaption>
+      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${trend.subject} 진단 정답률: ${label}`}>
+        <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} className="axis" />
+        <polyline fill="none" className="line" points={pts.map((p, i) => `${x(i)},${y(p.correctness)}`).join(' ')} />
+        {pts.map((p, i) => <circle key={p.date + i} cx={x(i)} cy={y(p.correctness)} r="3.5" className="dot"><title>{`${p.date}: ${p.correctness}점`}</title></circle>)}
+      </svg>
+    </figure>
   )
 }
