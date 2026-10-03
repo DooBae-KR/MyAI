@@ -24,14 +24,14 @@ class ReminderMessageTest {
     void pointsToFirstOpenStepSkippingCompletedAndLocked() {
         String m = ReminderMessage.build(List.of(goal("LEARNING",
                 List.of(step(1, StepStatus.COMPLETED), step(2, StepStatus.LEARNING), step(3, StepStatus.LOCKED)))),
-                new StatsResponse.Day("2026-10-03", 2, 1), List.of());
+                new StatsResponse.Day("2026-10-03", 2, 1, 0), List.of());
         assertTrue(m.contains("**Vue** 1/4 (25%) → Step 2 T2 (약 30분)"), m);
         assertTrue(m.contains("진단 답변 2개, 코딩 풀이 1개"), m);
     }
 
     @Test
     void listsReviewStepsAndCapsThem() {
-        var day = new StatsResponse.Day("d", 0, 0);
+        var day = new StatsResponse.Day("d", 0, 0, 0);
         var reviews = new java.util.ArrayList<StatsResponse.Review>();
         for (int i = 1; i <= 7; i++) reviews.add(new StatsResponse.Review(1L, "Vue", (long) i, i, "T" + i, i == 1 ? 55 : null, i == 1 ? 2 : null));
 
@@ -45,7 +45,7 @@ class ReminderMessageTest {
 
     @Test
     void earlyStagesAndEmptyAndAllDone() {
-        var day = new StatsResponse.Day("d", 0, 0);
+        var day = new StatsResponse.Day("d", 0, 0, 0);
         assertTrue(ReminderMessage.build(List.of(goal("DIAGNOSTIC_NEEDED", List.of())), day, List.of()).contains("진단 문제 만들기"));
         assertTrue(ReminderMessage.build(List.of(), day, List.of()).contains("등록된 학습 목표가 없습니다"));
         assertTrue(ReminderMessage.build(List.of(goal("LEARNING", List.of(step(1, StepStatus.COMPLETED)))), day, List.of()).contains("모든 단계 완료"));

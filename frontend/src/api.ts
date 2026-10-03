@@ -126,6 +126,12 @@ export interface Lesson {
   commonMistakes: string[]
   checklist: string[]
 }
+/** 학습 시간을 조용히 더한다(실패해도 화면에 영향 없음, 401이어도 토큰을 다시 묻지 않는다). keepalive로 탭을 닫을 때도 보낸다. */
+export const sendStudyTime = (stepId: number, seconds: number) =>
+  send(`/api/learning/steps/${stepId}/study-time`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seconds }), keepalive: true,
+  }).then(() => undefined, () => undefined)
+
 export const fetchLesson = (stepId: number, refresh = false) =>
   post<Lesson>(`/api/learning/steps/${stepId}/lesson?refresh=${refresh}`)
 
@@ -191,8 +197,8 @@ export interface PatternAnalysis {
 }
 
 export interface Stats {
-  totals: { goals: number; stepsTotal: number; stepsCompleted: number; answers: number; submissions: number; problems: number }
-  activity: { date: string; answers: number; submissions: number }[]
+  totals: { goals: number; stepsTotal: number; stepsCompleted: number; answers: number; submissions: number; problems: number; studyMinutes: number }
+  activity: { date: string; answers: number; submissions: number; studyMinutes: number }[]
   codingByCategory: { name: string; count: number }[]
   patternsByStatus: { name: PatternStatus; count: number }[]
   diagnosticTrends: { goalId: number; subject: string; points: { date: string; correctness: number }[] }[]

@@ -11,6 +11,7 @@ import com.personal.ai.data.codingtest.CodingProblemRepository;
 import com.personal.ai.data.codingtest.CodingSubmissionRepository;
 import com.personal.ai.data.learning.LearningAnswerRepository;
 import com.personal.ai.data.learning.LearningGoalRepository;
+import com.personal.ai.data.learning.LearningSessionRepository;
 import com.personal.ai.data.learning.LearningStepRepository;
 import com.personal.ai.data.learning.ThinkingPatternRepository;
 import org.slf4j.Logger;
@@ -41,13 +42,14 @@ public class StatsService {
     private final CodingSubmissionRepository submissions;
     private final CodingProblemRepository problems;
     private final ThinkingPatternRepository patterns;
+    private final LearningSessionRepository sessions;
     private final AssessmentRepository assessments;
     private final ObjectMapper mapper;
     private final Clock clock;
 
     public StatsService(LearningGoalRepository goals, LearningStepRepository steps, LearningAnswerRepository answers,
                         CodingSubmissionRepository submissions, CodingProblemRepository problems,
-                        ThinkingPatternRepository patterns, AssessmentRepository assessments,
+                        ThinkingPatternRepository patterns, LearningSessionRepository sessions, AssessmentRepository assessments,
                         ObjectMapper mapper, Clock clock) {
         this.goals = goals;
         this.steps = steps;
@@ -55,6 +57,7 @@ public class StatsService {
         this.submissions = submissions;
         this.problems = problems;
         this.patterns = patterns;
+        this.sessions = sessions;
         this.assessments = assessments;
         this.mapper = mapper;
         this.clock = clock;
@@ -69,18 +72,23 @@ public class StatsService {
             if (row[1] == StepStatus.COMPLETED) completed += n;
         }
         var totals = new StatsResponse.Totals(goals.count(), total, completed,
-                answers.count(), submissions.count(), problems.count());
+                answers.count(), submissions.count(), problems.count(), Math.round(sessions.totalSeconds() / 60.0));
 
         LocalDate today = LocalDate.now(clock);
         LocalDateTime since = today.minusDays(DAYS - 1).atStartOfDay();
         List<LocalDateTime> answered = answers.createdSince(since);
         List<LocalDateTime> submitted = submissions.createdSince(since);
+        java.util.Map<LocalDate, Long> studied = new java.util.HashMap<>();
+        for (Object[] row : sessions.secondsByDaySince(today.minusDays(DAYS - 1))) {
+            studied.put((LocalDate) row[0], ((Number) row[1]).longValue());
+        }
         List<StatsResponse.Day> activity = new ArrayList<>();
         for (int i = DAYS - 1; i >= 0; i--) {
             LocalDate day = today.minusDays(i);
             activity.add(new StatsResponse.Day(day.toString(),
                     (int) answered.stream().filter(t -> t.toLocalDate().equals(day)).count(),
-                    (int) submitted.stream().filter(t -> t.toLocalDate().equals(day)).count()));
+                    (int) submitted.stream().filter(t -> t.toLocalDate().equals(day)).count(),
+                    (int) Math.round(studied.getOrDefault(day, 0L) / 60.0)));
         }
 
         return new StatsResponse(totals, activity,

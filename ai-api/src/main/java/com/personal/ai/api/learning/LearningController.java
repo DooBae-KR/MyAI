@@ -19,12 +19,13 @@ public class LearningController {
     private final StepProgressService stepProgress;
     private final StepAssessmentService stepAssessment;
     private final TutorService tutor;
+    private final StudyTimeService studyTime;
 
     public LearningController(LearningService learningService, DiagnosticService diagnosticService,
                               GradingService gradingService, CurriculumService curriculumService,
                               DashboardService dashboardService, StepProgressService stepProgress,
                               StepAssessmentService stepAssessment,
-                              TutorService tutor) {
+                              TutorService tutor, StudyTimeService studyTime) {
         this.learningService = learningService;
         this.diagnosticService = diagnosticService;
         this.gradingService = gradingService;
@@ -33,6 +34,7 @@ public class LearningController {
         this.stepProgress = stepProgress;
         this.stepAssessment = stepAssessment;
         this.tutor = tutor;
+        this.studyTime = studyTime;
     }
 
     @PostMapping("/subjects")
@@ -67,6 +69,12 @@ public class LearningController {
     @PostMapping("/steps/{stepId}/start")
     public GoalDetail startStep(@PathVariable Long stepId) {
         return stepProgress.goal(stepProgress.start(stepId));
+    }
+
+    /** 학습 시간(초)을 더한다. 화면이 열려 있는 동안 주기적으로 보낸다. 오늘 이 Step의 누적 초를 돌려준다. */
+    @PostMapping("/steps/{stepId}/study-time")
+    public java.util.Map<String, Integer> studyTime(@PathVariable Long stepId, @RequestBody StudyTimeRequest request) {
+        return java.util.Map.of("todaySeconds", studyTime.add(stepId, request.seconds()));
     }
 
     /** Step 학습 자료(개념, 예제, 구현 과제, 완료 체크). 있으면 저장된 것을, 없거나 refresh=true면 새로 만든다. */

@@ -27,6 +27,7 @@ function StatsBody({ stats: s }: { stats: Stats }) {
       <ul className="tiles">
         <Tile label="학습 목표" value={t.goals} />
         <Tile label="완료한 단계" value={`${t.stepsCompleted}/${t.stepsTotal}`} sub={`${progress}%`} />
+        <Tile label="학습 시간" value={formatStudy(t.studyMinutes)} />
         <Tile label="진단 답변" value={t.answers} />
         <Tile label="코딩 문제" value={t.problems} />
         <Tile label="코딩 풀이 제출" value={t.submissions} />
@@ -34,18 +35,18 @@ function StatsBody({ stats: s }: { stats: Stats }) {
 
       <section>
         <h2>최근 14일 활동</h2>
-        <div className="activity" role="img" aria-label={`최근 14일 활동: ${s.activity.map((d) => `${d.date} ${d.answers + d.submissions}건`).join(', ')}`}>
+        <div className="activity" role="img" aria-label={`최근 14일 활동: ${s.activity.map((d) => `${d.date} ${d.answers + d.submissions}건 ${d.studyMinutes}분`).join(', ')}`}>
           {s.activity.map((d) => {
             const n = d.answers + d.submissions
             return (
-              <div key={d.date} className="day" title={`${d.date}: 답변 ${d.answers}, 풀이 ${d.submissions}`}>
+              <div key={d.date} className="day" title={`${d.date}: 답변 ${d.answers}, 풀이 ${d.submissions}, 학습 ${d.studyMinutes}분`}>
                 <div className="col" style={{ height: `${(n / max) * 100}%` }} />
                 <span className="muted small">{d.date.slice(8)}</span>
               </div>
             )
           })}
         </div>
-        <p className="muted small">답변 + 코딩 풀이 제출 수 (날짜: 서버 시간 기준)</p>
+        <p className="muted small">답변 + 코딩 풀이 제출 수. 막대에 올리면 그날 학습 시간(분)도 보입니다 (날짜: 서버 시간 기준)</p>
       </section>
 
       {s.reviews.length > 0 && (
@@ -137,4 +138,11 @@ function TrendChart({ trend }: { trend: Stats['diagnosticTrends'][number] }) {
       </svg>
     </figure>
   )
+}
+
+/** 학습 시간(분)을 "1시간 30분"처럼. 학습 자료를 열어 둔 시간만 센다. */
+function formatStudy(minutes: number) {
+  if (minutes < 60) return `${minutes}분`
+  const h = Math.floor(minutes / 60), m = minutes % 60
+  return m === 0 ? `${h}시간` : `${h}시간 ${m}분`
 }

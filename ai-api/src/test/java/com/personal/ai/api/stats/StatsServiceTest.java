@@ -37,10 +37,11 @@ class StatsServiceTest {
     private final CodingSubmissionRepository submissions = mock(CodingSubmissionRepository.class);
     private final CodingProblemRepository problems = mock(CodingProblemRepository.class);
     private final ThinkingPatternRepository patterns = mock(ThinkingPatternRepository.class);
+    private final com.personal.ai.data.learning.LearningSessionRepository sessions = mock(com.personal.ai.data.learning.LearningSessionRepository.class);
     private final AssessmentRepository assessments = mock(AssessmentRepository.class);
     private final ObjectMapper mapper = new ObjectMapper();
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC);
-    private final StatsService service = new StatsService(goals, steps, answers, submissions, problems, patterns, assessments, mapper, clock);
+    private final StatsService service = new StatsService(goals, steps, answers, submissions, problems, patterns, sessions, assessments, mapper, clock);
 
     private Assessment graded(LearningGoal goal, Long id, int correctness, AreaScore... areas) throws Exception {
         Assessment a = new Assessment(goal, null, AssessmentType.DIAGNOSTIC, "{}");
@@ -113,14 +114,17 @@ class StatsServiceTest {
         when(submissions.countByCategory()).thenReturn(List.of(
                 new Object[] {"그래프", 3L}, new Object[] {null, 1L}));
         when(patterns.countByStatus()).thenReturn(List.<Object[]>of(new Object[] {PatternStatus.SUPPORTED, 2L}));
+        when(sessions.totalSeconds()).thenReturn(5400L);
+        when(sessions.secondsByDaySince(org.mockito.ArgumentMatchers.any())).thenReturn(List.<Object[]>of(
+                new Object[] {java.time.LocalDate.parse("2026-10-03"), 270L}));
 
         StatsResponse r = service.stats();
 
-        assertEquals(new StatsResponse.Totals(2, 6, 3, 3, 4, 5), r.totals());
+        assertEquals(new StatsResponse.Totals(2, 6, 3, 3, 4, 5, 90), r.totals());
         assertEquals(StatsService.DAYS, r.activity().size());
-        assertEquals(new StatsResponse.Day("2026-10-03", 2, 1), r.activity().get(StatsService.DAYS - 1));
-        assertEquals(new StatsResponse.Day("2026-10-02", 0, 0), r.activity().get(StatsService.DAYS - 2));
-        assertEquals(new StatsResponse.Day("2026-10-01", 1, 0), r.activity().get(StatsService.DAYS - 3));
+        assertEquals(new StatsResponse.Day("2026-10-03", 2, 1, 5), r.activity().get(StatsService.DAYS - 1));
+        assertEquals(new StatsResponse.Day("2026-10-02", 0, 0, 0), r.activity().get(StatsService.DAYS - 2));
+        assertEquals(new StatsResponse.Day("2026-10-01", 1, 0, 0), r.activity().get(StatsService.DAYS - 3));
         assertEquals("분류 없음", r.codingByCategory().get(1).name());
         assertEquals(new StatsResponse.Count("SUPPORTED", 2), r.patternsByStatus().get(0));
     }
