@@ -50,6 +50,21 @@ app:
   # 비어 있으면 /api 인증 없음. 서버를 외부(폰 앱)에 공개하면 반드시 설정 (Authorization: Bearer <값>)
   token: ${APP_TOKEN:}
 
+calendar:
+  # 캘린더 구독(ICS) 주소의 비밀 토큰(16자 이상). 비어 있으면 피드를 끈다. 주소: /calendar/<토큰>/personal-ai.ics
+  token: ${CALENDAR_TOKEN:}
+  zone: ${CALENDAR_ZONE:Asia/Seoul}
+  start: ${CALENDAR_START:21:00}   # 매일 학습 일정 시작 시각(HH:mm)
+  days: ${CALENDAR_DAYS:14}        # 앞으로 계획을 보여 줄 일수(최대 60)
+
+notion:
+  # 하루 학습 로그를 Notion 데이터베이스에 페이지로 남긴다. 토큰(통합 시크릿)은 비밀. 둘 다 비어 있으면 끔
+  token: ${NOTION_TOKEN:}
+  database-id: ${NOTION_DATABASE_ID:}
+  title-property: ${NOTION_TITLE_PROPERTY:Name}   # 데이터베이스의 제목 속성 이름(한글이면 보통 "이름")
+  cron: ${NOTION_CRON:0 10 21 * * *}              # 매일 21:10
+  zone: ${NOTION_ZONE:Asia/Seoul}
+
 discord:
   # Incoming Webhook 주소(비밀). 비어 있으면 알림 끔
   webhook-url: ${DISCORD_WEBHOOK_URL:}
