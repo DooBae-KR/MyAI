@@ -1,0 +1,8 @@
+# 생성물: 시드/예시/학습 데이터와 모델은 커밋하지 않는다
+seeds.jsonl
+examples/
+clean.jsonl
+train.jsonl
+val.jsonl
+out/
+*.gguf
