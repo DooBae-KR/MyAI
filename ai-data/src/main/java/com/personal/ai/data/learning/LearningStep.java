@@ -64,5 +64,6 @@ public class LearningStep {
     public String getDetail() { return detail; }
     public StepStatus getStatus() { return status; }
     public void setStatus(StepStatus status) { this.status = status; }
+    public void setDetail(String detail) { this.detail = detail; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

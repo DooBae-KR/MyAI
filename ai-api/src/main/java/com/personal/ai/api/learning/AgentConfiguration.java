@@ -4,6 +4,7 @@ import com.personal.ai.agent.codingtest.CodingTestAgent;
 import com.personal.ai.agent.curriculum.CurriculumAgent;
 import com.personal.ai.agent.evaluator.EvaluatorAgent;
 import com.personal.ai.agent.pattern.PatternAnalyzerAgent;
+import com.personal.ai.agent.tutor.TutorAgent;
 import com.personal.ai.core.model.AiModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,11 @@ public class AgentConfiguration {
     @Bean
     public PatternAnalyzerAgent patternAnalyzerAgent(AiModel aiModel) {
         return new PatternAnalyzerAgent(aiModel);
+    }
+
+    @Bean
+    public TutorAgent tutorAgent(AiModel aiModel) {
+        return new TutorAgent(aiModel);
     }
 
     @Bean

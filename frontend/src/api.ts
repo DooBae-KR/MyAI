@@ -117,6 +117,18 @@ export interface StepOutcome { passed: boolean; passScore: number; stepStatus: S
 export const submitAnswers = (assessmentId: number, answers: { questionId: number; answer: string }[]) =>
   post<{ result: GradingResult; stepOutcome: StepOutcome | null }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
 export const startStep = (stepId: number) => post<GoalDetail>(`/api/learning/steps/${stepId}/start`)
+export interface Lesson {
+  promptVersion: string
+  overview: string
+  concepts: { title: string; explanation: string }[]
+  examples: { title: string; language: string; code: string; explanation: string }[]
+  implementationTask: string
+  commonMistakes: string[]
+  checklist: string[]
+}
+export const fetchLesson = (stepId: number, refresh = false) =>
+  post<Lesson>(`/api/learning/steps/${stepId}/lesson?refresh=${refresh}`)
+
 export const openStepAssessment = (stepId: number) =>
   post<{ assessmentId: number; goalId: number; quiz: Quiz }>(`/api/learning/steps/${stepId}/assessment`)
 export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)

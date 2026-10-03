@@ -3,6 +3,8 @@ package com.personal.ai.api.learning;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import com.personal.ai.agent.tutor.LessonContent;
+
 import java.util.List;
 
 @RestController
@@ -16,11 +18,13 @@ public class LearningController {
     private final DashboardService dashboardService;
     private final StepProgressService stepProgress;
     private final StepAssessmentService stepAssessment;
+    private final TutorService tutor;
 
     public LearningController(LearningService learningService, DiagnosticService diagnosticService,
                               GradingService gradingService, CurriculumService curriculumService,
                               DashboardService dashboardService, StepProgressService stepProgress,
-                              StepAssessmentService stepAssessment) {
+                              StepAssessmentService stepAssessment,
+                              TutorService tutor) {
         this.learningService = learningService;
         this.diagnosticService = diagnosticService;
         this.gradingService = gradingService;
@@ -28,6 +32,7 @@ public class LearningController {
         this.dashboardService = dashboardService;
         this.stepProgress = stepProgress;
         this.stepAssessment = stepAssessment;
+        this.tutor = tutor;
     }
 
     @PostMapping("/subjects")
@@ -62,6 +67,12 @@ public class LearningController {
     @PostMapping("/steps/{stepId}/start")
     public GoalDetail startStep(@PathVariable Long stepId) {
         return stepProgress.goal(stepProgress.start(stepId));
+    }
+
+    /** Step 학습 자료(개념, 예제, 구현 과제, 완료 체크). 있으면 저장된 것을, 없거나 refresh=true면 새로 만든다. */
+    @PostMapping("/steps/{stepId}/lesson")
+    public LessonContent lesson(@PathVariable Long stepId, @RequestParam(defaultValue = "false") boolean refresh) {
+        return tutor.lesson(stepId, refresh);
     }
 
     /** Step 확인 문제를 연다(풀다 만 문제가 있으면 그대로). 풀이 제출은 /assessments/{id}/answers를 쓴다. */

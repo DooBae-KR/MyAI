@@ -3,6 +3,7 @@ import { fetchGoal, fetchGoals, fetchLlmSettings, openStepAssessment, startStep,
 import { useAction, useHashRoute, useLoad } from './hooks'
 import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
+import { LessonPanel } from './LessonPanel'
 import { AnswerForm, NextActionPanel } from './NextActionPanel'
 import { CodingPage, ProblemPage } from './CodingPage'
 import { PatternsPage } from './PatternsPage'
@@ -152,6 +153,7 @@ function GoalView({ detail, onChanged }: { detail: GoalDetail; onChanged: () => 
                 {s.practiceTasks.length > 0 && (
                   <ul className="tasks">{s.practiceTasks.map((t) => <li key={t}>{t}</li>)}</ul>
                 )}
+                {s.status !== 'LOCKED' && <LessonPanel stepId={s.id} />}
                 <StepActions step={s} onChanged={onChanged} />
               </li>
             ))}
