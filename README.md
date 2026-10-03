@@ -184,3 +184,20 @@ POST /api/settings/llm/test    현재 선택으로 짧은 호출을 보내 확�
 - **API 키는 화면에서 입력하지 않습니다.** `.env`의 `ANTHROPIC_API_KEY`로만 설정합니다. 비었거나 자리표시자(공백이나 한글이 섞인 값)면 "키 없음"으로 보고 Claude 선택을 막습니다.
 - `AI_PROVIDER`는 처음 시작할 때의 기본 선택이고, 저장된 선택이 있으면 그것이 우선합니다. 저장된 선택이 Claude인데 키가 사라졌다면 무시하고 Ollama로 시작합니다.
 - Claude 호출은 비용이 듭니다. `/api` 엔드포인트는 인증이 없으니 외부에 노출하지 마세요.
+
+## 종목 추천 → Discord
+
+watchlist 종목의 시세(야후 파이낸스)와 기술 지표(RSI, 이동평균, Z-score)를 LLM이 보고 BUY/SELL/HOLD와 근거를 Discord로 보냅니다.
+([tofulim/auto_trade](https://github.com/tofulim/auto_trade)의 LLM 전략을 참고)
+
+`.env`:
+
+```properties
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...   # 채널 설정 > 연동 > 웹후크
+STOCK_WATCHLIST=453810.KS,SPY                              # 야후 심볼, 쉼표 구분
+STOCK_ENABLED=true                                         # 스케줄 발송 켜기
+STOCK_CRON=0 0 9 * * MON-FRI                               # 선택. Asia/Seoul 기준
+```
+
+스케줄을 기다리지 않고 바로 보내려면 `POST http://localhost:8080/api/stocks/recommend`.
+참고용 분석이며 투자 판단과 책임은 본인에게 있습니다.
