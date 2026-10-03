@@ -75,9 +75,9 @@ public class DiscordReminderService {
     }
 
     String message() {
-        var today = stats.stats().activity();
-        StatsResponse.Day last = today.get(today.size() - 1);
+        StatsResponse snapshot = stats.stats();
+        StatsResponse.Day last = snapshot.activity().get(snapshot.activity().size() - 1);
         var goals = dashboard.goals().stream().map(g -> dashboard.goal(g.goalId())).toList();
-        return ReminderMessage.build(goals, last);
+        return ReminderMessage.build(goals, last, snapshot.reviews());
     }
 }

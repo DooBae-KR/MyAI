@@ -185,6 +185,7 @@ export interface Stats {
   patternsByStatus: { name: PatternStatus; count: number }[]
   diagnosticTrends: { goalId: number; subject: string; points: { date: string; correctness: number }[] }[]
   weakAreas: { subject: string; area: string; score: number }[]
+  reviews: { goalId: number; subject: string; stepId: number; seq: number; title: string; lastScore: number | null; daysAgo: number | null }[]
 }
 
 export const fetchStats = () => request<Stats>('/api/stats')

@@ -52,6 +52,32 @@ class StatsServiceTest {
     }
 
     @Test
+    void reviewsListStepsNeedingReviewLowestScoreFirstWithUnknownLast() throws Exception {
+        LearningGoal goal = mock(LearningGoal.class);
+        when(goal.getId()).thenReturn(7L);
+        when(goal.getSubject()).thenReturn(new LearningSubject("Vue", null));
+        var s1 = new com.personal.ai.data.learning.LearningStep(goal, 1, "A", "o", 2, StepStatus.REVIEW_REQUIRED, "{}");
+        var s2 = new com.personal.ai.data.learning.LearningStep(goal, 2, "B", "o", 2, StepStatus.REVIEW_REQUIRED, "{}");
+        var s3 = new com.personal.ai.data.learning.LearningStep(goal, 3, "C", "o", 2, StepStatus.REVIEW_REQUIRED, "{}");
+        org.springframework.test.util.ReflectionTestUtils.setField(s1, "id", 11L);
+        org.springframework.test.util.ReflectionTestUtils.setField(s2, "id", 12L);
+        org.springframework.test.util.ReflectionTestUtils.setField(s3, "id", 13L);
+        when(steps.findByStatusOrderByGoalIdAscSeqAsc(StepStatus.REVIEW_REQUIRED)).thenReturn(List.of(s1, s2, s3));
+        Assessment a1 = graded(goal, 1L, 65, new AreaScore("x", 1));
+        Assessment a2 = graded(goal, 2L, 40, new AreaScore("x", 1));
+        when(assessments.findFirstByStepIdAndTypeOrderByIdDesc(11L, AssessmentType.STEP)).thenReturn(java.util.Optional.of(a1));
+        when(assessments.findFirstByStepIdAndTypeOrderByIdDesc(12L, AssessmentType.STEP)).thenReturn(java.util.Optional.of(a2));
+        when(assessments.findFirstByStepIdAndTypeOrderByIdDesc(13L, AssessmentType.STEP)).thenReturn(java.util.Optional.empty());
+
+        var r = service.stats().reviews();
+
+        assertEquals(List.of("B", "A", "C"), r.stream().map(StatsResponse.Review::title).toList());
+        assertEquals(40, r.get(0).lastScore());
+        assertEquals(1, r.get(0).daysAgo()); // 10-02 09:00 → 오늘(10-03)
+        assertEquals(null, r.get(2).lastScore());
+    }
+
+    @Test
     void trendsFollowEachDiagnosticAndWeakAreasUseTheLatestOne() throws Exception {
         LearningGoal goal = mock(LearningGoal.class);
         when(goal.getId()).thenReturn(7L);

@@ -11,6 +11,10 @@ public interface LearningStepRepository extends JpaRepository<LearningStep, Long
     @EntityGraph(attributePaths = {"goal", "goal.subject"})
     java.util.Optional<LearningStep> findWithGoalById(Long id);
 
+    /** 통계/알림용: 해당 상태의 Step 전부(목표·분야 포함). */
+    @EntityGraph(attributePaths = {"goal", "goal.subject"})
+    List<LearningStep> findByStatusOrderByGoalIdAscSeqAsc(com.personal.ai.core.learning.StepStatus status);
+
     List<LearningStep> findByGoalIdOrderBySeq(Long goalId);
 
     boolean existsByGoalId(Long goalId);

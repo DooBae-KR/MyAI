@@ -90,7 +90,26 @@ public class StatsService {
                 patterns.countByStatus().stream()
                         .map(r -> new StatsResponse.Count(r[0].toString(), ((Number) r[1]).longValue()))
                         .toList(),
-                trends(), weakAreas());
+                trends(), weakAreas(), reviews(today));
+    }
+
+    /** 보충 필요 Step을 점수가 낮은 순으로. 점수를 모르면(채점 기록 없음) 뒤로 보낸다. */
+    private List<StatsResponse.Review> reviews(LocalDate today) {
+        return steps.findByStatusOrderByGoalIdAscSeqAsc(StepStatus.REVIEW_REQUIRED).stream().map(st -> {
+            Integer score = null, daysAgo = null;
+            var last = assessments.findFirstByStepIdAndTypeOrderByIdDesc(st.getId(), AssessmentType.STEP)
+                    .filter(a -> a.getResult() != null);
+            if (last.isPresent()) {
+                try {
+                    score = mapper.readValue(last.get().getResult(), GradingResult.class).correctness();
+                    daysAgo = (int) java.time.temporal.ChronoUnit.DAYS.between(last.get().getCreatedAt().toLocalDate(), today);
+                } catch (JsonProcessingException e) {
+                    log.warn("통계에서 채점 결과를 읽지 못했습니다: assessment {}", last.get().getId());
+                }
+            }
+            return new StatsResponse.Review(st.getGoal().getId(), st.getGoal().getSubject().getName(), st.getId(),
+                    st.getSeq(), st.getTitle(), score, daysAgo);
+        }).sorted(Comparator.comparing(StatsResponse.Review::lastScore, Comparator.nullsLast(Comparator.naturalOrder()))).toList();
     }
 
     private record Graded(Assessment assessment, GradingResult result) {}

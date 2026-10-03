@@ -11,7 +11,7 @@ final class ReminderMessage {
 
     private ReminderMessage() {}
 
-    static String build(List<GoalDetail> goals, StatsResponse.Day today) {
+    static String build(List<GoalDetail> goals, StatsResponse.Day today, List<StatsResponse.Review> reviews) {
         StringBuilder sb = new StringBuilder("📚 **오늘의 학습**\n");
         if (goals.isEmpty()) {
             sb.append("등록된 학습 목표가 없습니다. 대시보드에서 목표를 추가해 보세요.\n");
@@ -21,6 +21,12 @@ final class ReminderMessage {
             sb.append("• **").append(s.subject()).append("** ")
                     .append(s.completedSteps()).append('/').append(s.totalSteps()).append(" (").append(s.progressPercent()).append("%) → ")
                     .append(next(g)).append('\n');
+        }
+        if (!reviews.isEmpty()) {
+            sb.append("\n🔁 **복습 필요**\n");
+            reviews.stream().limit(5).forEach(r -> sb.append("• ").append(r.subject()).append(" · Step ").append(r.seq()).append(' ').append(r.title())
+                    .append(r.lastScore() == null ? "" : " (마지막 " + r.lastScore() + "점)").append('\n'));
+            if (reviews.size() > 5) sb.append("… 외 ").append(reviews.size() - 5).append("개\n");
         }
         sb.append("\n오늘 활동: 진단 답변 ").append(today.answers()).append("개, 코딩 풀이 ").append(today.submissions()).append("개");
         return sb.toString();

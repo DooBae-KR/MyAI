@@ -48,6 +48,23 @@ function StatsBody({ stats: s }: { stats: Stats }) {
         <p className="muted small">답변 + 코딩 풀이 제출 수 (날짜: 서버 시간 기준)</p>
       </section>
 
+      {s.reviews.length > 0 && (
+        <section>
+          <h2>복습할 Step <span className="muted small">{s.reviews.length}개</span></h2>
+          <p className="muted small">확인 문제에서 합격선에 못 미친 Step입니다. 다시 학습한 뒤 새 문제로 도전하세요. 점수가 낮은 순입니다.</p>
+          <ul className="reviews">
+            {s.reviews.map((r) => (
+              <li key={r.stepId}>
+                <a href={`#/goals/${r.goalId}`}>{r.subject} · Step {r.seq} {r.title}</a>
+                <span className="muted small">
+                  {r.lastScore === null ? '채점 기록 없음' : `마지막 ${r.lastScore}점${r.daysAgo === null ? '' : r.daysAgo === 0 ? ' · 오늘' : ` · ${r.daysAgo}일 전`}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section>
         <h2>진단 정답률 추이</h2>
         {s.diagnosticTrends.length === 0 && <p className="muted">채점된 진단이 아직 없습니다. 진단을 다시 받으면 변화가 선으로 보입니다.</p>}
