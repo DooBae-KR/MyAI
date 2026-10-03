@@ -201,3 +201,7 @@ STOCK_CRON=0 0 9 * * MON-FRI                               # 선택. Asia/Seoul 
 
 스케줄을 기다리지 않고 바로 보내려면 `POST http://localhost:8080/api/stocks/recommend`.
 참고용 분석이며 투자 판단과 책임은 본인에게 있습니다.
+
+## Claude Code 스킬: caveman
+
+`.claude/skills/`에 [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)(Apache-2.0)의 `caveman`, `ultracave`, `megacave` 스킬을 그대로 넣었습니다. 출력 토큰을 줄이려고 군더더기 없이 짧게 답하게 합니다. Claude Code에서 `/caveman`으로 켜고 "stop caveman"으로 끕니다. 라이선스는 `.claude/skills/CAVEMAN-LICENSE`.
