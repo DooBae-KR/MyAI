@@ -484,7 +484,7 @@ Discord에서 학습 현황을 바로 조회합니다. 봇을 계속 켜 두는 
 
 ## 운영 배포
 
-**Supabase는 이 앱의 DB입니다. 앱 자체(화면 포함)를 올리는 곳이 아닙니다.** 프론트엔드(React)는 빌드해서 Spring Boot 안에 넣고 Spring이 같은 주소에서 함께 서빙하므로, **Spring을 배포하면 프론트엔드도 같이 나갑니다.** Supabase의 Storage와 Edge Functions는 웹사이트(HTML) 호스팅 용도가 아니고 JVM 앱도 실행하지 못하므로, 이 앱은 컨테이너를 돌릴 수 있는 곳(Cloud Run, Fly.io, Render, Railway 등)에 올리고 DB만 Supabase를 씁니다.
+**Supabase는 이 앱의 DB입니다. 앱 자체(화면 포함)를 올리는 곳이 아닙니다.** 프론트엔드(React)는 빌드해서 Spring Boot 안에 넣고 Spring이 같은 주소에서 함께 서빙하므로, **Spring을 배포하면 프론트엔드도 같이 나갑니다.** Supabase의 Storage와 Edge Functions는 웹사이트(HTML) 호스팅 용도가 아니고 JVM 앱도 실행하지 못하므로, 이 앱은 컨테이너를 돌릴 수 있는 곳(Cloud Run, Render, Railway 등)에 올리고 DB만 Supabase를 씁니다.
 
 ```
 폰/브라우저/Discord ──HTTPS──▶ 컨테이너(Spring Boot + 화면) ──▶ Supabase(PostgreSQL)
