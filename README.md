@@ -346,3 +346,24 @@ POST /api/learning/assessments/{id}/answers    진단과 같은 제출 API. Step
 - 문제는 그 Step의 목표만 묻고, 채점은 진단과 같은 코드 경로(LLM은 문항별 점수만, 점수 계산은 코드)를 씁니다. 단, **Step 문제는 쉬워서 목표의 현재 수준(`currentLevel`)을 바꾸지 않습니다.**
 - Step 답변도 사고 패턴 분석의 대상이 됩니다. 상태 전이는 `StepProgressService` 한 곳에 모여 있어 잘못된 상태에서 호출하면 `409`입니다.
 - 실측(Claude Code): 문제 생성 약 30초, 채점 약 10~13초.
+
+## DB 최소 권한 계정 (서버에 올릴 때 권장)
+
+기본 설정은 `DB_USERNAME` 하나로 스키마 변경(Flyway)과 앱 실행을 모두 합니다. 서버에 공개하는 앱이라면 **앱 계정은 데이터만 읽고 쓰게** 낮추세요.
+앱이 뚫리거나 SQL 주입이 생겨도 테이블 삭제·변경은 막힙니다(앱 코드는 `DELETE`를 쓰지 않습니다).
+
+1. 소유자 계정(지금 쓰는 계정)으로 한 번 실행 — 비밀번호는 파일에 쓰지 말고 변수로 넘깁니다:
+   ```bash
+   psql "<소유자 접속 문자열>" -v app_password='<새 비밀번호>' -f scripts/db/create-app-role.sql
+   ```
+   `personal_ai_app` 계정이 만들어지고 `personal_ai` 스키마에 `SELECT/INSERT/UPDATE`만 갖습니다. 이후 마이그레이션(V7…)이 만드는 새 테이블에도 같은 권한이 자동으로 붙습니다.
+2. `.env`를 바꿉니다:
+   ```
+   DB_USERNAME=personal_ai_app            # 앱 실행 계정 (Supabase pooler면 personal_ai_app.<프로젝트ref>)
+   DB_PASSWORD=<새 비밀번호>
+   DB_MIGRATION_USERNAME=<소유자 계정>      # Flyway만 사용. 비우면 DB_USERNAME을 그대로 씀
+   DB_MIGRATION_PASSWORD=<소유자 비밀번호>
+   ```
+   소유자 비밀번호는 서버 `.env`에만 두고, 로컬 개발용과 서버용 계정을 나누면 더 안전합니다.
+- 확인된 것: 앱 계정으로 조회·저장은 되고, `DELETE`/`DROP`/`ALTER`/`CREATE`는 `permission denied`입니다(로컬 Postgres 16).
+- 앱 계정만 설정하고 `DB_MIGRATION_*`를 빼면 새 마이그레이션이 있는 버전으로 올릴 때 Flyway가 권한 오류로 멈춥니다.
