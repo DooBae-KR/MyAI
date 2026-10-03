@@ -217,6 +217,16 @@ export const fetchToday = () => request<Today>('/api/today')
 
 export const fetchStats = () => request<Stats>('/api/stats')
 
+export interface Insights {
+  assessments: { attempts: number; passed: number; relearnCount: number; averageScore: number | null }
+  algorithms: { name: string; submissions: number; sameItems: number; comparedItems: number; matchPercent: number }[]
+  languages: { name: string; count: number }[]
+  studyMinutesBySubject: { name: string; count: number }[]
+  areaChanges: { subject: string; area: string; first: number; latest: number; delta: number }[]
+  patterns: { name: string; status: PatternStatus; observed: number; improved: number; trend: 'NONE' | 'MIXED' | 'IMPROVING' }[]
+}
+export const fetchInsights = () => request<Insights>('/api/stats/insights')
+
 export const fetchPatterns = () => request<PatternView[]>('/api/learning/patterns')
 export const analyzePatterns = () => post<PatternAnalysis>('/api/learning/patterns/analyze')
 export const updatePattern = (id: number, status: 'DISMISSED' | 'HYPOTHESIS') =>

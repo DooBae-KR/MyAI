@@ -15,6 +15,10 @@ public interface LearningSessionRepository extends JpaRepository<LearningSession
     @Query("select coalesce(sum(s.seconds), 0) from LearningSession s")
     long totalSeconds();
 
+    /** 행 형식: [분야 이름, 합계(초)]. 많이 공부한 분야 순. */
+    @Query("select sub.name, sum(s.seconds) from LearningSession s join s.step st join st.goal g join g.subject sub group by sub.name order by sum(s.seconds) desc")
+    List<Object[]> secondsBySubject();
+
     /** 행 형식: [날짜, 그날 합계(초)]. */
     @Query("select s.studyDate, sum(s.seconds) from LearningSession s where s.studyDate >= :since group by s.studyDate")
     List<Object[]> secondsByDaySince(@Param("since") LocalDate since);

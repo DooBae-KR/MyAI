@@ -1,4 +1,4 @@
-import { fetchStats, type Stats } from './api'
+import { fetchInsights, fetchStats, type Insights, type Stats } from './api'
 import { useLoad } from './hooks'
 import { PATTERN_STATUS_LABEL, scoreTone } from './labels'
 
@@ -12,6 +12,7 @@ export function StatsPage() {
       {error && <p className="error" role="alert">통계를 불러오지 못했습니다: {error}</p>}
       {!data && !error && <p className="muted">불러오는 중…</p>}
       {data && <StatsBody stats={data} />}
+      {data && <InsightsBody />}
     </>
   )
 }
@@ -145,4 +146,110 @@ function formatStudy(minutes: number) {
   if (minutes < 60) return `${minutes}분`
   const h = Math.floor(minutes / 60), m = minutes % 60
   return m === 0 ? `${h}시간` : `${h}시간 ${m}분`
+}
+
+const TREND_TEXT = { NONE: '개선 신호 없음', MIXED: '엇갈림', IMPROVING: '개선되는 모습' } as const
+
+/** 설계서 21장의 나머지 통계. 따로 불러와서 이 부분이 실패해도 위쪽 통계는 그대로 보인다. */
+function InsightsBody() {
+  const { data: i, error } = useLoad<Insights>(fetchInsights, 'insights')
+  if (error) return <p className="error" role="alert">추가 통계를 불러오지 못했습니다: {error}</p>
+  if (!i) return null
+  const a = i.assessments
+  const maxLang = Math.max(1, ...i.languages.map((l) => l.count))
+  const maxStudy = Math.max(1, ...i.studyMinutesBySubject.map((l) => l.count))
+
+  return (
+    <>
+      <section>
+        <h2>확인 문제 성적</h2>
+        {a.attempts === 0
+          ? <p className="muted">아직 푼 확인 문제가 없습니다. Step을 공부한 뒤 확인 문제를 풀어 보세요.</p>
+          : (
+            <ul className="tiles">
+              <Tile label="평균 점수" value={`${a.averageScore}점`} />
+              <Tile label="합격" value={`${a.passed}/${a.attempts}`} sub={`${Math.round((a.passed / a.attempts) * 100)}%`} />
+              <Tile label="재학습" value={`${a.relearnCount}회`} sub="합격선 미달" />
+            </ul>
+          )}
+      </section>
+
+      {i.areaChanges.length > 0 && (
+        <section>
+          <h2>좋아진 영역 · 달라진 영역</h2>
+          <p className="muted small">같은 목표의 첫 진단과 가장 최근 진단을 비교한 점수입니다.</p>
+          <ul className="cats">
+            {i.areaChanges.map((c) => (
+              <li key={`${c.subject}-${c.area}`}>
+                <span>{c.subject} · {c.area}</span>
+                <span className="muted small">{c.first} → {c.latest}</span>
+                <span className="score" style={{ color: c.delta >= 0 ? 'var(--ok)' : 'var(--weak)' }}>{c.delta > 0 ? '+' : ''}{c.delta}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {i.algorithms.length > 0 && (
+        <section>
+          <h2>알고리즘별 풀이 일치율</h2>
+          <p className="muted small">코드를 실행해 채점하지 않습니다. AI 풀이 비교에서 권장 접근과 같다고 본 항목의 비율입니다.</p>
+          <ul className="cats">
+            {i.algorithms.map((al) => (
+              <li key={al.name}>
+                <span>{al.name} <span className="muted small">({al.submissions}회)</span></span>
+                <div className={`bar ${scoreTone(al.matchPercent)}`} role="img" aria-label={`${al.name} 일치율 ${al.matchPercent}%`}>
+                  <div style={{ width: `${al.matchPercent}%` }} />
+                </div>
+                <span className="score">{al.matchPercent}%</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(i.languages.length > 0 || i.studyMinutesBySubject.length > 0) && (
+        <section>
+          <h2>학습량</h2>
+          {i.studyMinutesBySubject.length > 0 && (
+            <ul className="cats" aria-label="분야별 학습 시간">
+              {i.studyMinutesBySubject.map((s) => (
+                <li key={s.name}>
+                  <span>{s.name}</span>
+                  <div className="bar mid"><div style={{ width: `${(s.count / maxStudy) * 100}%` }} /></div>
+                  <span className="score">{formatStudy(s.count)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {i.languages.length > 0 && (
+            <ul className="cats" aria-label="언어별 풀이 수">
+              {i.languages.map((l) => (
+                <li key={l.name}>
+                  <span>{l.name} 풀이</span>
+                  <div className="bar mid"><div style={{ width: `${(l.count / maxLang) * 100}%` }} /></div>
+                  <span className="score">{l.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {i.patterns.length > 0 && (
+        <section>
+          <h2>사고 패턴 변화</h2>
+          <p className="muted small">개선 신호는 한 번의 좋은 답변일 뿐이라 가장 최근 근거 3개 중 2개 이상일 때만 "개선되는 모습"이라 부릅니다.</p>
+          <ul className="reviews">
+            {i.patterns.map((p) => (
+              <li key={p.name}>
+                <a href="#/patterns">{p.name}</a>
+                <span className="muted small">{PATTERN_STATUS_LABEL[p.status]} · 관찰 {p.observed}개 · 개선 신호 {p.improved}개 · {TREND_TEXT[p.trend]}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  )
 }
