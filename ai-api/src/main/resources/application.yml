@@ -43,3 +43,10 @@ claude:
 mcp:
   # 비어 있으면 인증 없음. 외부에 노출하면 반드시 설정 (Authorization: Bearer <값>)
   token: ${MCP_TOKEN:}
+
+stock:
+  # true면 cron 시각마다 watchlist를 분석해 디스코드로 보낸다 (수동 실행: POST /api/stocks/recommend)
+  enabled: ${STOCK_ENABLED:false}
+  cron: ${STOCK_CRON:0 0 9 * * MON-FRI}   # Asia/Seoul 기준
+  discord-webhook-url: ${DISCORD_WEBHOOK_URL:}
+  watchlist: ${STOCK_WATCHLIST:}          # 야후 심볼을 쉼표로: 453810.KS,SPY
