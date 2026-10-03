@@ -330,3 +330,16 @@ GET /api/stats   합계(목표·완료 단계·답변·코딩 문제·풀이 제
 `.github/workflows/ci.yml`이 push/PR마다 백엔드 테스트, 프론트엔드 빌드, **gitleaks 비밀 값 검사**(전체 커밋 기록)를 돌립니다.
 조직 소유 저장소에서 gitleaks 단계가 라이선스 오류를 내면 저장소 시크릿 `GITLEAKS_LICENSE`를 추가하거나 그 단계를 지우세요.
 비밀 값(DB 비밀번호, `DISCORD_WEBHOOK_URL`, API 키, `APP_TOKEN`)은 `.env`에만 두고, 실수로 커밋·채팅에 노출했다면 **즉시 폐기하고 새로 발급**하세요(기록에서 지워도 이미 복사됐을 수 있습니다).
+
+## Step 진행 (학습 시작 → 완료)
+
+목표 화면의 커리큘럼에서 Step마다 버튼으로 진행 상태를 바꿉니다.
+
+```http
+POST /api/learning/steps/{stepId}/start      시작 가능(AVAILABLE)·보충 필요(REVIEW_REQUIRED) → 학습 중(LEARNING)
+POST /api/learning/steps/{stepId}/complete   학습 중 → 완료(COMPLETED), 다음 Step이 잠겨 있으면 시작 가능으로 연다
+```
+
+- 두 API 모두 갱신된 목표 상세를 돌려주고, 맞지 않는 상태에서 호출하면 `409`입니다.
+- **지금은 학습자가 직접 완료를 표시(자가 완료)합니다.** 진행률, 통계, Discord 알림의 "다음 할 단계"가 이 상태를 따라갑니다.
+  Step 평가(문제 풀이 → 채점 → 합격/보충 필요)는 아직 없고, 붙이면 `complete`의 조건만 바뀌도록 상태 전이를 `StepProgressService` 한 곳에 모아 두었습니다.

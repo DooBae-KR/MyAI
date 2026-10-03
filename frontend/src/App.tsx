@@ -1,5 +1,5 @@
-import { fetchGoal, fetchGoals, fetchLlmSettings, type GoalDetail, type GoalSummary } from './api'
-import { useHashRoute, useLoad } from './hooks'
+import { completeStep, fetchGoal, fetchGoals, fetchLlmSettings, startStep, type GoalDetail, type GoalSummary } from './api'
+import { useAction, useHashRoute, useLoad } from './hooks'
 import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
 import { NextActionPanel } from './NextActionPanel'
@@ -151,11 +151,32 @@ function GoalView({ detail, onChanged }: { detail: GoalDetail; onChanged: () => 
                 {s.practiceTasks.length > 0 && (
                   <ul className="tasks">{s.practiceTasks.map((t) => <li key={t}>{t}</li>)}</ul>
                 )}
+                <StepActions step={s} onChanged={onChanged} />
               </li>
             ))}
           </ol>
         </section>
       )}
     </>
+  )
+}
+
+/** 학습 시작 → 완료(자가 표시). 완료하면 서버가 다음 Step을 연다. */
+function StepActions({ step, onChanged }: { step: GoalDetail['steps'][number]; onChanged: () => void }) {
+  const action = useAction()
+  const next = step.status === 'AVAILABLE' || step.status === 'REVIEW_REQUIRED'
+    ? { label: '학습 시작', run: () => startStep(step.id) }
+    : step.status === 'LEARNING'
+      ? { label: '완료했어요', run: () => completeStep(step.id) }
+      : null
+  if (!next) return null
+  return (
+    <div className="actions">
+      <button className="primary" disabled={action.pending} onClick={async () => { if (await action.run(next.run)) onChanged() }}>
+        {action.pending ? '처리 중…' : next.label}
+      </button>
+      {step.status === 'LEARNING' && <span className="muted small">직접 확인한 뒤 눌러 주세요. 다음 Step이 열립니다.</span>}
+      {action.error && <span className="error" role="alert">{action.error}</span>}
+    </div>
   )
 }

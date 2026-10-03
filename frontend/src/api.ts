@@ -114,6 +114,8 @@ export const createGoal = (goal: NewGoal) =>
 export const createDiagnostic = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/diagnostic`)
 export const submitAnswers = (assessmentId: number, answers: { questionId: number; answer: string }[]) =>
   post<{ result: GradingResult }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
+export const startStep = (stepId: number) => post<GoalDetail>(`/api/learning/steps/${stepId}/start`)
+export const completeStep = (stepId: number) => post<GoalDetail>(`/api/learning/steps/${stepId}/complete`)
 export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)
 
 export type Provider = 'OLLAMA' | 'CLAUDE' | 'CLAUDE_CODE'

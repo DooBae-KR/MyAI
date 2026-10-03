@@ -15,7 +15,7 @@ class LearningControllerTest {
 
     private final LearningService service = mock(LearningService.class);
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new LearningController(service, mock(DiagnosticService.class),
-            mock(GradingService.class), mock(CurriculumService.class), mock(DashboardService.class))).build();
+            mock(GradingService.class), mock(CurriculumService.class), mock(DashboardService.class), mock(StepProgressService.class))).build();
 
     @Test
     void createsSubjectAndReturns201() throws Exception {

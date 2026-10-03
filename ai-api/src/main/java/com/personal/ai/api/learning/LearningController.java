@@ -14,15 +14,17 @@ public class LearningController {
     private final GradingService gradingService;
     private final CurriculumService curriculumService;
     private final DashboardService dashboardService;
+    private final StepProgressService stepProgress;
 
     public LearningController(LearningService learningService, DiagnosticService diagnosticService,
                               GradingService gradingService, CurriculumService curriculumService,
-                              DashboardService dashboardService) {
+                              DashboardService dashboardService, StepProgressService stepProgress) {
         this.learningService = learningService;
         this.diagnosticService = diagnosticService;
         this.gradingService = gradingService;
         this.curriculumService = curriculumService;
         this.dashboardService = dashboardService;
+        this.stepProgress = stepProgress;
     }
 
     @PostMapping("/subjects")
@@ -53,6 +55,18 @@ public class LearningController {
     }
 
     /** Dashboard: 목표 목록과 진행률. */
+    /** Step 학습 시작. 갱신된 목표 상세를 돌려준다. */
+    @PostMapping("/steps/{stepId}/start")
+    public GoalDetail startStep(@PathVariable Long stepId) {
+        return stepProgress.goal(stepProgress.start(stepId));
+    }
+
+    /** Step 완료 표시(자가 완료). 다음 Step이 잠겨 있으면 연다. */
+    @PostMapping("/steps/{stepId}/complete")
+    public GoalDetail completeStep(@PathVariable Long stepId) {
+        return stepProgress.goal(stepProgress.complete(stepId));
+    }
+
     @GetMapping("/goals")
     public List<GoalSummary> goals() {
         return dashboardService.goals();
