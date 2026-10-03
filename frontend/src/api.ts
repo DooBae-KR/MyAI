@@ -112,10 +112,13 @@ export interface NewGoal {
 export const createGoal = (goal: NewGoal) =>
   post<{ subjectId: number; goalId: number }>('/api/learning/subjects', goal)
 export const createDiagnostic = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/diagnostic`)
+export interface StepOutcome { passed: boolean; passScore: number; stepStatus: StepStatus }
+
 export const submitAnswers = (assessmentId: number, answers: { questionId: number; answer: string }[]) =>
-  post<{ result: GradingResult }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
+  post<{ result: GradingResult; stepOutcome: StepOutcome | null }>(`/api/learning/assessments/${assessmentId}/answers`, { answers })
 export const startStep = (stepId: number) => post<GoalDetail>(`/api/learning/steps/${stepId}/start`)
-export const completeStep = (stepId: number) => post<GoalDetail>(`/api/learning/steps/${stepId}/complete`)
+export const openStepAssessment = (stepId: number) =>
+  post<{ assessmentId: number; goalId: number; quiz: Quiz }>(`/api/learning/steps/${stepId}/assessment`)
 export const createCurriculum = (goalId: number) => post<unknown>(`/api/learning/goals/${goalId}/curriculum`)
 
 export type Provider = 'OLLAMA' | 'CLAUDE' | 'CLAUDE_CODE'

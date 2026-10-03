@@ -7,6 +7,7 @@ import com.personal.ai.agent.evaluator.DiagnosticQuiz;
 import com.personal.ai.agent.evaluator.EvaluatorAgent;
 import com.personal.ai.agent.evaluator.GradingResult;
 import com.personal.ai.agent.evaluator.QuestionResult;
+import com.personal.ai.core.learning.AssessmentType;
 import com.personal.ai.data.learning.Assessment;
 import com.personal.ai.data.learning.AssessmentRepository;
 import com.personal.ai.data.learning.LearningAnswer;
@@ -35,14 +36,17 @@ public class GradingService {
     private final EvaluatorAgent evaluator;
     private final ObjectMapper mapper;
     private final TransactionTemplate tx;
+    private final StepProgressService stepProgress;
 
     public GradingService(AssessmentRepository assessments, LearningAnswerRepository answers,
-                          EvaluatorAgent evaluator, ObjectMapper mapper, TransactionTemplate tx) {
+                          EvaluatorAgent evaluator, ObjectMapper mapper, TransactionTemplate tx,
+                          StepProgressService stepProgress) {
         this.assessments = assessments;
         this.answers = answers;
         this.evaluator = evaluator;
         this.mapper = mapper;
         this.tx = tx;
+        this.stepProgress = stepProgress;
     }
 
     public GradingResponse grade(Long assessmentId, AnswersRequest request) {
@@ -63,20 +67,24 @@ public class GradingService {
                 .collect(Collectors.toMap(QuestionResult::questionId, r -> r));
         String resultJson = write(result);
 
-        tx.executeWithoutResult(status -> {
+        StepOutcome outcome = tx.execute(status -> {
             Assessment managed = assessments.findById(assessmentId).orElseThrow();
             if (managed.getResult() != null) { // 동시에 두 번 제출된 경우
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 채점된 진단입니다.");
             }
             managed.setResult(resultJson);
-            managed.getGoal().setCurrentLevel(result.level());
+            if (managed.getType() == AssessmentType.DIAGNOSTIC) { // Step 확인 문제는 쉬워서 현재 수준 판정에 쓰지 않는다
+                managed.getGoal().setCurrentLevel(result.level());
+            }
             submitted.forEach((questionId, text) -> {
                 LearningAnswer answer = new LearningAnswer(managed, questionId, text);
                 answer.setScores(write(byQuestion.get(questionId)));
                 answers.save(answer);
             });
+            return managed.getType() == AssessmentType.STEP
+                    ? stepProgress.applyAssessment(managed.getStep(), result.correctness()) : null;
         });
-        return new GradingResponse(assessmentId, result);
+        return new GradingResponse(assessmentId, result, outcome);
     }
 
     /** 문제 번호 검증, 빈 답변 제외, 길이 제한. 채점할 답변이 하나도 없으면 400. */

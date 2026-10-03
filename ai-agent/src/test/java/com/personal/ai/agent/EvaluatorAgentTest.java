@@ -41,6 +41,17 @@ class EvaluatorAgentTest {
     }
 
     @Test
+    void generatesStepQuizFromTheStepOnly() {
+        FakeModel model = new FakeModel(VALID);
+
+        DiagnosticQuiz quiz = new EvaluatorAgent(model).generateStepQuiz("Vue", "실무", "비동기와 Promise", "Promise를 쓴다", 2, List.of("fetch 과제"));
+
+        assertEquals(3, quiz.questions().size());
+        assertTrue(model.requests.get(0).getUserPrompt().contains("비동기와 Promise"));
+        assertTrue(model.requests.get(0).getSystemPrompt().contains("이해했는지 확인하는 문제"));
+    }
+
+    @Test
     void retriesOnceWithErrorNoteThenSucceeds() {
         FakeModel model = new FakeModel("죄송합니다, 문제를 만들 수 없어요", VALID);
 

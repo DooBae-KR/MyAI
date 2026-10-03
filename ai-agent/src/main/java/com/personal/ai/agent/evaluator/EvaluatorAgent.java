@@ -23,6 +23,7 @@ public class EvaluatorAgent {
 
     private final StructuredLlm llm;
     private final Prompt diagnosticPrompt = Prompt.load("evaluator-diagnostic");
+    private final Prompt stepPrompt = Prompt.load("evaluator-step");
     private final Prompt gradingPrompt = Prompt.load("evaluator-grading");
 
     public EvaluatorAgent(AiModel model) {
@@ -42,6 +43,23 @@ public class EvaluatorAgent {
         List<DiagnosticQuestion> questions =
                 llm.call(diagnosticPrompt, llm.toJson(input), 0.4, this::parseQuestions);
         return new DiagnosticQuiz(diagnosticPrompt.version(), questions);
+    }
+
+    /** Step을 공부한 뒤 이해를 확인하는 문제(3~5개). 채점은 진단과 같은 grade()를 쓴다. */
+    public DiagnosticQuiz generateStepQuiz(String subject, String goal, String stepTitle, String objective,
+                                           int difficulty, List<String> practiceTasks) {
+        Map<String, Object> step = new LinkedHashMap<>();
+        step.put("title", stepTitle);
+        step.put("objective", objective);
+        step.put("difficulty", difficulty);
+        step.put("practiceTasks", practiceTasks);
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("subject", subject);
+        input.put("goal", goal);
+        input.put("step", step);
+
+        List<DiagnosticQuestion> questions = llm.call(stepPrompt, llm.toJson(input), 0.4, this::parseQuestions);
+        return new DiagnosticQuiz(stepPrompt.version(), questions);
     }
 
     List<DiagnosticQuestion> parseQuestions(JsonNode root) {

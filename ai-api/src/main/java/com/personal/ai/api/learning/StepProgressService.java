@@ -9,11 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Step 진행 상태 전이를 한 곳에 모은다: AVAILABLE/REVIEW_REQUIRED → LEARNING → COMPLETED, 완료하면 다음 Step을 연다.
- * 지금은 학습자가 직접 완료를 표시한다(자가 완료). Step 평가(PASSED/REVIEW_REQUIRED)를 붙이면 complete의 조건만 바뀐다.
+ * Step 진행 상태 전이를 한 곳에 모은다.
+ * AVAILABLE/REVIEW_REQUIRED → LEARNING → ASSESSMENT(확인 문제) → 합격 COMPLETED(다음 Step 열림) / 불합격 REVIEW_REQUIRED.
  */
 @Service
 public class StepProgressService {
+
+    /** 확인 문제 합격선(난이도 가중 정답률). */
+    public static final int PASS_SCORE = 70;
 
     private final LearningStepRepository steps;
     private final DashboardService dashboard;
@@ -33,19 +36,31 @@ public class StepProgressService {
         return step.getGoal().getId();
     }
 
-    @Transactional
-    public Long complete(Long stepId) {
-        LearningStep step = find(stepId);
-        if (step.getStatus() != StepStatus.LEARNING) {
-            throw conflict(step, "학습 중인 Step만 완료할 수 있습니다");
+    /** 확인 문제를 풀 수 있는 상태(LEARNING, 또는 이어 풀기인 ASSESSMENT)인지 검사한다. 상태는 바꾸지 않는다. */
+    public void checkAssessable(LearningStep step) {
+        if (step.getStatus() != StepStatus.LEARNING && step.getStatus() != StepStatus.ASSESSMENT) {
+            throw conflict(step, "학습 중인 Step만 확인 문제를 풀 수 있습니다");
         }
-        step.setStatus(StepStatus.COMPLETED);
-        steps.findByGoalIdOrderBySeq(step.getGoal().getId()).stream()
-                .filter(s -> s.getSeq() > step.getSeq())
-                .findFirst()
-                .filter(next -> next.getStatus() == StepStatus.LOCKED)
-                .ifPresent(next -> next.setStatus(StepStatus.AVAILABLE));
-        return step.getGoal().getId();
+    }
+
+    /** 검사 후 ASSESSMENT로 바꾼다. 호출하는 쪽의 트랜잭션 안에서 실행한다. */
+    public void markAssessing(LearningStep step) {
+        checkAssessable(step);
+        step.setStatus(StepStatus.ASSESSMENT);
+    }
+
+    /** 채점 결과를 Step에 반영한다. 호출하는 쪽의 트랜잭션 안에서 실행한다. */
+    public StepOutcome applyAssessment(LearningStep step, int correctness) {
+        boolean passed = correctness >= PASS_SCORE;
+        step.setStatus(passed ? StepStatus.COMPLETED : StepStatus.REVIEW_REQUIRED);
+        if (passed) {
+            steps.findByGoalIdOrderBySeq(step.getGoal().getId()).stream()
+                    .filter(s -> s.getSeq() > step.getSeq())
+                    .findFirst()
+                    .filter(next -> next.getStatus() == StepStatus.LOCKED)
+                    .ifPresent(next -> next.setStatus(StepStatus.AVAILABLE));
+        }
+        return new StepOutcome(passed, PASS_SCORE, step.getStatus());
     }
 
     public GoalDetail goal(Long goalId) {

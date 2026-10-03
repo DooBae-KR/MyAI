@@ -331,15 +331,17 @@ GET /api/stats   합계(목표·완료 단계·답변·코딩 문제·풀이 제
 조직 소유 저장소에서 gitleaks 단계가 라이선스 오류를 내면 저장소 시크릿 `GITLEAKS_LICENSE`를 추가하거나 그 단계를 지우세요.
 비밀 값(DB 비밀번호, `DISCORD_WEBHOOK_URL`, API 키, `APP_TOKEN`)은 `.env`에만 두고, 실수로 커밋·채팅에 노출했다면 **즉시 폐기하고 새로 발급**하세요(기록에서 지워도 이미 복사됐을 수 있습니다).
 
-## Step 진행 (학습 시작 → 완료)
+## Step 진행과 확인 문제
 
-목표 화면의 커리큘럼에서 Step마다 버튼으로 진행 상태를 바꿉니다.
+목표 화면의 커리큘럼에서 Step마다 **학습 시작 → 확인 문제 → 합격하면 완료**로 진행합니다.
 
 ```http
-POST /api/learning/steps/{stepId}/start      시작 가능(AVAILABLE)·보충 필요(REVIEW_REQUIRED) → 학습 중(LEARNING)
-POST /api/learning/steps/{stepId}/complete   학습 중 → 완료(COMPLETED), 다음 Step이 잠겨 있으면 시작 가능으로 연다
+POST /api/learning/steps/{stepId}/start        시작 가능(AVAILABLE)·보충 필요(REVIEW_REQUIRED) → 학습 중(LEARNING). 갱신된 목표 상세를 돌려준다
+POST /api/learning/steps/{stepId}/assessment   확인 문제(3~5개)를 만든다. 학습 중이어야 하고, 풀다 만 문제가 있으면 새로 만들지 않고 그대로 돌려준다
+POST /api/learning/assessments/{id}/answers    진단과 같은 제출 API. Step 문제면 응답에 stepOutcome(합격 여부, 합격선, Step 새 상태)이 들어 있다
 ```
 
-- 두 API 모두 갱신된 목표 상세를 돌려주고, 맞지 않는 상태에서 호출하면 `409`입니다.
-- **지금은 학습자가 직접 완료를 표시(자가 완료)합니다.** 진행률, 통계, Discord 알림의 "다음 할 단계"가 이 상태를 따라갑니다.
-  Step 평가(문제 풀이 → 채점 → 합격/보충 필요)는 아직 없고, 붙이면 `complete`의 조건만 바뀌도록 상태 전이를 `StepProgressService` 한 곳에 모아 두었습니다.
+- **합격선 70점**(난이도 가중 정답률, `StepProgressService.PASS_SCORE`). 합격하면 Step이 `COMPLETED`가 되고 **다음 Step이 열립니다**. 못 미치면 `REVIEW_REQUIRED`(보충 필요)가 되어 다시 학습한 뒤 새 문제로 도전합니다(횟수 제한 없음).
+- 문제는 그 Step의 목표만 묻고, 채점은 진단과 같은 코드 경로(LLM은 문항별 점수만, 점수 계산은 코드)를 씁니다. 단, **Step 문제는 쉬워서 목표의 현재 수준(`currentLevel`)을 바꾸지 않습니다.**
+- Step 답변도 사고 패턴 분석의 대상이 됩니다. 상태 전이는 `StepProgressService` 한 곳에 모여 있어 잘못된 상태에서 호출하면 `409`입니다.
+- 실측(Claude Code): 문제 생성 약 30초, 채점 약 10~13초.

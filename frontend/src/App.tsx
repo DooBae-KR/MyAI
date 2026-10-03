@@ -1,8 +1,9 @@
-import { completeStep, fetchGoal, fetchGoals, fetchLlmSettings, startStep, type GoalDetail, type GoalSummary } from './api'
+import { useState } from 'react'
+import { fetchGoal, fetchGoals, fetchLlmSettings, openStepAssessment, startStep, type GoalDetail, type GoalSummary, type Quiz } from './api'
 import { useAction, useHashRoute, useLoad } from './hooks'
 import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
-import { NextActionPanel } from './NextActionPanel'
+import { AnswerForm, NextActionPanel } from './NextActionPanel'
 import { CodingPage, ProblemPage } from './CodingPage'
 import { PatternsPage } from './PatternsPage'
 import { StatsPage } from './StatsPage'
@@ -161,21 +162,37 @@ function GoalView({ detail, onChanged }: { detail: GoalDetail; onChanged: () => 
   )
 }
 
-/** 학습 시작 → 완료(자가 표시). 완료하면 서버가 다음 Step을 연다. */
+/** 학습 시작 → 확인 문제(70점 이상 합격하면 완료, 다음 Step 열림). 못 미치면 "보충 필요"가 되어 다시 학습한다. */
 function StepActions({ step, onChanged }: { step: GoalDetail['steps'][number]; onChanged: () => void }) {
   const action = useAction()
+  const [quiz, setQuiz] = useState<{ assessmentId: number; quiz: Quiz } | null>(null)
+
+  if (quiz) {
+    return <AnswerForm assessmentId={quiz.assessmentId} quiz={quiz.quiz} heading={`${step.title} 확인 문제`}
+      onContinue={() => { setQuiz(null); onChanged() }} />
+  }
+
   const next = step.status === 'AVAILABLE' || step.status === 'REVIEW_REQUIRED'
-    ? { label: '학습 시작', run: () => startStep(step.id) }
-    : step.status === 'LEARNING'
-      ? { label: '완료했어요', run: () => completeStep(step.id) }
+    ? { label: '학습 시작', run: async () => { await startStep(step.id); return null } }
+    : step.status === 'LEARNING' || step.status === 'ASSESSMENT'
+      ? { label: step.status === 'ASSESSMENT' ? '확인 문제 이어서 풀기' : '확인 문제 풀기',
+          run: async () => openStepAssessment(step.id) }
       : null
   if (!next) return null
+
+  async function click() {
+    const res = await action.run(next!.run)
+    if (res === undefined) return // 실패: action.error가 보인다
+    if (res) setQuiz({ assessmentId: res.assessmentId, quiz: res.quiz })
+    onChanged() // 상태 배지(학습 중 → 확인 중)를 갱신한다. 퀴즈 화면은 그대로 유지된다
+  }
+
   return (
     <div className="actions">
-      <button className="primary" disabled={action.pending} onClick={async () => { if (await action.run(next.run)) onChanged() }}>
-        {action.pending ? '처리 중…' : next.label}
-      </button>
-      {step.status === 'LEARNING' && <span className="muted small">직접 확인한 뒤 눌러 주세요. 다음 Step이 열립니다.</span>}
+      <button className="primary" disabled={action.pending} onClick={click}>{action.pending ? '처리 중…' : next.label}</button>
+      {step.status === 'LEARNING' && <span className="muted small">공부를 마친 뒤 누르세요. 70점 이상이면 완료되고 다음 Step이 열립니다.</span>}
+      {step.status === 'REVIEW_REQUIRED' && <span className="muted small">확인 문제에서 합격선에 못 미쳤습니다. 다시 학습하세요.</span>}
+      {action.pending && step.status !== 'AVAILABLE' && step.status !== 'REVIEW_REQUIRED' && <span className="muted small" role="status">문제를 만드는 중… 모델에 따라 최대 1~2분 걸립니다</span>}
       {action.error && <span className="error" role="alert">{action.error}</span>}
     </div>
   )

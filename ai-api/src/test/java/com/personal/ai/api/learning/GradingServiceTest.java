@@ -26,8 +26,9 @@ class GradingServiceTest {
     private final AssessmentRepository assessments = mock(AssessmentRepository.class);
     private final LearningAnswerRepository answers = mock(LearningAnswerRepository.class);
     private final EvaluatorAgent evaluator = mock(EvaluatorAgent.class);
+    private final StepProgressService stepProgress = new StepProgressService(mock(LearningStepRepository.class), mock(DashboardService.class));
     private final GradingService service = new GradingService(assessments, answers, evaluator, mapper,
-            new TransactionTemplate(mock(PlatformTransactionManager.class)));
+            new TransactionTemplate(mock(PlatformTransactionManager.class)), stepProgress);
 
     private static final List<DiagnosticQuestion> QUESTIONS = List.of(
             new DiagnosticQuestion(1, "JS", "CONCEPT", 1, "var와 let?", List.of("스코프")),
@@ -46,6 +47,44 @@ class GradingServiceTest {
 
     private static AnswersRequest answers(AnswersRequest.Item... items) {
         return new AnswersRequest(List.of(items));
+    }
+
+    private GradingResult graded(int correctness) {
+        return new GradingResult("1", correctness, new Criteria(1, 2, 3, 4, 5, 6),
+                List.of(new AreaScore("비동기", correctness)), Level.ADVANCED, List.of(), List.of(),
+                List.of(new QuestionResult(1, correctness, "ok")));
+    }
+
+    private Assessment stepAssessment(LearningStep step) throws Exception {
+        Assessment a = new Assessment(goal, step, AssessmentType.STEP, mapper.writeValueAsString(new DiagnosticQuiz("1", QUESTIONS)));
+        when(assessments.findWithGoalById(1L)).thenReturn(Optional.of(a));
+        when(assessments.findById(1L)).thenReturn(Optional.of(a));
+        return a;
+    }
+
+    @Test
+    void passingStepAssessmentCompletesTheStepWithoutTouchingTheGoalLevel() throws Exception {
+        LearningStep step = new LearningStep(goal, 1, "S1", "o", 2, com.personal.ai.core.learning.StepStatus.ASSESSMENT, "{}");
+        stepAssessment(step);
+        when(evaluator.grade(any(), any(), any(), any())).thenReturn(graded(StepProgressService.PASS_SCORE));
+
+        GradingResponse response = service.grade(1L, answers(new AnswersRequest.Item(1, "답")));
+
+        assertTrue(response.stepOutcome().passed());
+        assertEquals(com.personal.ai.core.learning.StepStatus.COMPLETED, step.getStatus());
+        assertNull(goal.getCurrentLevel()); // 진단과 달리 현재 수준을 바꾸지 않는다
+    }
+
+    @Test
+    void failingStepAssessmentRequiresReview() throws Exception {
+        LearningStep step = new LearningStep(goal, 1, "S1", "o", 2, com.personal.ai.core.learning.StepStatus.ASSESSMENT, "{}");
+        stepAssessment(step);
+        when(evaluator.grade(any(), any(), any(), any())).thenReturn(graded(StepProgressService.PASS_SCORE - 1));
+
+        GradingResponse response = service.grade(1L, answers(new AnswersRequest.Item(1, "답")));
+
+        assertFalse(response.stepOutcome().passed());
+        assertEquals(com.personal.ai.core.learning.StepStatus.REVIEW_REQUIRED, step.getStatus());
     }
 
     @Test

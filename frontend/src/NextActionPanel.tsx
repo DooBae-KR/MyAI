@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createCurriculum, createDiagnostic, submitAnswers, type GoalDetail, type GradingResult, type Quiz } from './api'
+import { createCurriculum, createDiagnostic, submitAnswers, type GoalDetail, type GradingResult, type Quiz, type StepOutcome } from './api'
 import { useAction } from './hooks'
 import { LEVEL_LABEL, NEXT_TITLE, TYPE_LABEL, difficultyDots, scoreTone } from './labels'
 
@@ -64,9 +64,11 @@ function useDraft(key: string): [Record<number, string>, (v: Record<number, stri
   return [value, setValue, clear]
 }
 
-function AnswerForm({ assessmentId, quiz, onContinue }: { assessmentId: number; quiz: Quiz; onContinue: () => void }) {
+/** 진단과 Step 확인 문제가 함께 쓴다. step이면 합격 여부를 보여 주고 수준 판정은 숨긴다. */
+export function AnswerForm({ assessmentId, quiz, onContinue, heading = '진단 문제' }:
+  { assessmentId: number; quiz: Quiz; onContinue: () => void; heading?: string }) {
   const [answers, setAnswers, clearDraft] = useDraft(`draft:assessment:${assessmentId}`)
-  const [graded, setGraded] = useState<GradingResult | null>(null)
+  const [graded, setGraded] = useState<{ result: GradingResult; outcome: StepOutcome | null } | null>(null)
   const { pending, error, run } = useAction()
   const filled = quiz.questions.filter((q) => (answers[q.id] ?? '').trim()).length
 
@@ -77,15 +79,15 @@ function AnswerForm({ assessmentId, quiz, onContinue }: { assessmentId: number; 
     const res = await run(() => submitAnswers(assessmentId, items))
     if (res) {
       clearDraft()
-      setGraded(res.result)
+      setGraded({ result: res.result, outcome: res.stepOutcome })
     }
   }
 
-  if (graded) return <GradedView quiz={quiz} result={graded} onContinue={onContinue} />
+  if (graded) return <GradedView quiz={quiz} result={graded.result} outcome={graded.outcome} onContinue={onContinue} />
 
   return (
     <section aria-labelledby="quiz">
-      <h2 id="quiz">진단 문제 <span className="muted small">{quiz.questions.length}문항</span></h2>
+      <h2 id="quiz">{heading} <span className="muted small">{quiz.questions.length}문항</span></h2>
       <p className="muted small">아는 만큼만 적어도 됩니다. 비워 둔 문제는 0점(미응답)으로 처리됩니다. 한 번 제출하면 다시 제출할 수 없습니다.</p>
       <ol className="quiz">
         {quiz.questions.map((q) => (
@@ -111,11 +113,19 @@ function AnswerForm({ assessmentId, quiz, onContinue }: { assessmentId: number; 
   )
 }
 
-function GradedView({ quiz, result, onContinue }: { quiz: Quiz; result: GradingResult; onContinue: () => void }) {
+function GradedView({ quiz, result, outcome, onContinue }:
+  { quiz: Quiz; result: GradingResult; outcome: StepOutcome | null; onContinue: () => void }) {
   const byId = new Map(result.questionResults.map((r) => [r.questionId, r]))
   return (
     <section aria-labelledby="graded">
-      <h2 id="graded">채점 결과 <span className="muted small">정답률 {result.correctness}% · {LEVEL_LABEL[result.level]}</span></h2>
+      <h2 id="graded">채점 결과 <span className="muted small">정답률 {result.correctness}%{outcome ? '' : ` · ${LEVEL_LABEL[result.level]}`}</span></h2>
+      {outcome && (
+        <p className={outcome.passed ? 'ok-msg' : 'error'} role="status">
+          {outcome.passed
+            ? `합격입니다 (합격선 ${outcome.passScore}점). Step을 완료했고 다음 Step이 열렸습니다.`
+            : `합격선 ${outcome.passScore}점에 못 미쳤습니다. 이 Step은 "보충 필요"가 되었으니 다시 학습한 뒤 도전하세요.`}
+        </p>
+      )}
       <ul className="results">
         {quiz.questions.map((q) => {
           const r = byId.get(q.id)
@@ -130,7 +140,7 @@ function GradedView({ quiz, result, onContinue }: { quiz: Quiz; result: GradingR
           )
         })}
       </ul>
-      <button className="primary" onClick={onContinue}>다음 단계로</button>
+      <button className="primary" onClick={onContinue}>{outcome ? '확인' : '다음 단계로'}</button>
     </section>
   )
 }

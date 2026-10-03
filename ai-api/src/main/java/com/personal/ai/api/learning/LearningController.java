@@ -15,16 +15,19 @@ public class LearningController {
     private final CurriculumService curriculumService;
     private final DashboardService dashboardService;
     private final StepProgressService stepProgress;
+    private final StepAssessmentService stepAssessment;
 
     public LearningController(LearningService learningService, DiagnosticService diagnosticService,
                               GradingService gradingService, CurriculumService curriculumService,
-                              DashboardService dashboardService, StepProgressService stepProgress) {
+                              DashboardService dashboardService, StepProgressService stepProgress,
+                              StepAssessmentService stepAssessment) {
         this.learningService = learningService;
         this.diagnosticService = diagnosticService;
         this.gradingService = gradingService;
         this.curriculumService = curriculumService;
         this.dashboardService = dashboardService;
         this.stepProgress = stepProgress;
+        this.stepAssessment = stepAssessment;
     }
 
     @PostMapping("/subjects")
@@ -61,10 +64,11 @@ public class LearningController {
         return stepProgress.goal(stepProgress.start(stepId));
     }
 
-    /** Step 완료 표시(자가 완료). 다음 Step이 잠겨 있으면 연다. */
-    @PostMapping("/steps/{stepId}/complete")
-    public GoalDetail completeStep(@PathVariable Long stepId) {
-        return stepProgress.goal(stepProgress.complete(stepId));
+    /** Step 확인 문제를 연다(풀다 만 문제가 있으면 그대로). 풀이 제출은 /assessments/{id}/answers를 쓴다. */
+    @PostMapping("/steps/{stepId}/assessment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DiagnosticResponse openStepAssessment(@PathVariable Long stepId) {
+        return stepAssessment.open(stepId);
     }
 
     @GetMapping("/goals")
