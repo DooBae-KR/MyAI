@@ -76,7 +76,7 @@ class PatternServiceTest {
         }
         when(evidence.existsByPatternIdAndAnswerId(any(), any())).thenReturn(false);
         when(answers.countByAnalyzedAtIsNotNull()).thenReturn(3L);
-        when(evidence.countByPatternId(7L)).thenReturn(3);
+        when(evidence.countByPatternIdAndKind(7L, com.personal.ai.core.learning.EvidenceKind.OBSERVED)).thenReturn(3);
         when(patterns.findByStatusNot(PatternStatus.DISMISSED)).thenAnswer(i -> List.of(saved[0]));
 
         AnalysisResponse response = service.analyze();
@@ -153,6 +153,60 @@ class PatternServiceTest {
     }
 
     @Test
+    void improvementsAreStoredAsImprovedEvidenceAndLeaveConfidenceAndLastObservedUntouched() throws Exception {
+        LearningAnswer a5 = answer(5, 1, "이번엔 결론과 이유를 썼습니다");
+        when(answers.findTop30ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of(a5));
+        ThinkingPattern pattern = new ThinkingPattern("설명 압축 경향", "d", "결론, 이유, 원리 순서로 쓴다");
+        ReflectionTestUtils.setField(pattern, "id", 7L);
+        pattern.updateEvidence(3, 0.4);
+        pattern.setStatus(PatternStatus.SUPPORTED);
+        when(patterns.findAll()).thenReturn(List.of(pattern));
+        when(patterns.findByNameIgnoreCase("설명 압축 경향")).thenReturn(Optional.of(pattern));
+        when(patterns.findByStatusNot(PatternStatus.DISMISSED)).thenReturn(List.of(pattern));
+        when(answers.getReferenceById(5L)).thenReturn(a5);
+        when(answers.countByAnalyzedAtIsNotNull()).thenReturn(8L);
+        when(evidence.countByPatternIdAndKind(7L, com.personal.ai.core.learning.EvidenceKind.OBSERVED)).thenReturn(3);
+        when(agent.analyze(any(), any(), any())).thenReturn(new PatternAnalysis("3", List.of(), List.of(
+                new PatternImprovement("설명 압축 경향", new PatternEvidenceItem("A5", "결론과 이유를 썼습니다", "이유까지 씀")))));
+        var lastObservedBefore = pattern.getLastObservedAt();
+
+        AnalysisResponse response = service.analyze();
+
+        assertEquals(1, response.improvements());
+        ArgumentCaptor<PatternEvidence> saved = ArgumentCaptor.forClass(PatternEvidence.class);
+        verify(evidence).save(saved.capture());
+        assertEquals(com.personal.ai.core.learning.EvidenceKind.IMPROVED, saved.getValue().getKind());
+        assertEquals(3, pattern.getEvidenceCount()); // 관찰 근거 3개 그대로
+        assertEquals(PatternStatus.SUPPORTED, pattern.getStatus());
+        assertEquals(lastObservedBefore, pattern.getLastObservedAt());
+        // 에이전트에는 훈련 제안이 개선 판단 기준으로 전달된다
+        ArgumentCaptor<List<KnownPattern>> known = ArgumentCaptor.forClass(List.class);
+        verify(agent).analyze(any(), known.capture(), any());
+        assertEquals("결론, 이유, 원리 순서로 쓴다", known.getValue().get(0).improvementStrategy());
+    }
+
+    @Test
+    void improvementsForDismissedPatternsOrAlreadyUsedItemsAreSkipped() throws Exception {
+        LearningAnswer a5 = answer(5, 1, "답5");
+        when(answers.findTop30ByAnalyzedAtIsNullOrderByIdAsc()).thenReturn(List.of(a5));
+        ThinkingPattern dismissed = new ThinkingPattern("기각됨", "d", "s");
+        dismissed.setStatus(PatternStatus.DISMISSED);
+        ThinkingPattern used = new ThinkingPattern("이미 근거", "d", "s");
+        ReflectionTestUtils.setField(used, "id", 8L);
+        when(patterns.findAll()).thenReturn(List.of(dismissed, used));
+        when(patterns.findByNameIgnoreCase("기각됨")).thenReturn(Optional.of(dismissed));
+        when(patterns.findByNameIgnoreCase("이미 근거")).thenReturn(Optional.of(used));
+        when(evidence.existsByPatternIdAndAnswerId(8L, 5L)).thenReturn(true); // 이 항목은 이미 관찰 근거로 쓰였다
+        when(answers.getReferenceById(5L)).thenReturn(a5);
+        when(agent.analyze(any(), any(), any())).thenReturn(new PatternAnalysis("3", List.of(), List.of(
+                new PatternImprovement("기각됨", new PatternEvidenceItem("A5", "인용5번 답변", "n")),
+                new PatternImprovement("이미 근거", new PatternEvidenceItem("A5", "인용5번 답변", "n")))));
+
+        assertEquals(0, service.analyze().improvements());
+        verify(evidence, never()).save(any());
+    }
+
+    @Test
     void userCanDismissAndRestoreAPatternAndInvalidStatusesAreRejected() {
         ThinkingPattern p = new ThinkingPattern("패턴", "d", "s");
         p.updateEvidence(4, 0.3);
@@ -206,7 +260,7 @@ class PatternServiceTest {
         when(submissions.getReferenceById(7L)).thenReturn(sub);
         when(answers.countByAnalyzedAtIsNotNull()).thenReturn(1L);
         when(submissions.countByAnalyzedAtIsNotNull()).thenReturn(1L);
-        when(evidence.countByPatternId(9L)).thenReturn(2);
+        when(evidence.countByPatternIdAndKind(9L, com.personal.ai.core.learning.EvidenceKind.OBSERVED)).thenReturn(2);
         when(patterns.findByStatusNot(PatternStatus.DISMISSED)).thenAnswer(i -> List.of(saved[0]));
 
         AnalysisResponse response = service.analyze();

@@ -3,6 +3,8 @@ import { analyzePatterns, fetchPatterns, updatePattern, type PatternAnalysis, ty
 import { useAction, useLoad } from './hooks'
 import { PATTERN_STATUS_LABEL, scoreTone } from './labels'
 
+const TREND_LABEL = { NONE: '', MIXED: '개선 신호가 엇갈립니다', IMPROVING: '최근 근거에서 개선되는 모습이 보입니다' } as const
+
 export function PatternsPage() {
   const { data, error, reload } = useLoad<PatternView[]>(fetchPatterns, 'patterns')
   const analyze = useAction()
@@ -36,7 +38,7 @@ export function PatternsPage() {
       {analyze.error && <p className="error" role="alert">{analyze.error} (답변은 분석 전 상태로 남아 있어 다시 시도할 수 있습니다.)</p>}
       {result && (
         <p className="ok-msg" role="status">
-          {result.message ?? `답변 ${result.analyzedAnswers}개, 코딩 풀이 ${result.analyzedSubmissions}개를 분석했습니다. 새 패턴 ${result.newPatterns}개, 근거를 더한 기존 패턴 ${result.updatedPatterns}개.`}
+          {result.message ?? `답변 ${result.analyzedAnswers}개, 코딩 풀이 ${result.analyzedSubmissions}개를 분석했습니다. 새 패턴 ${result.newPatterns}개, 근거를 더한 기존 패턴 ${result.updatedPatterns}개, 개선 신호 ${result.improvements}개.`}
         </p>
       )}
 
@@ -93,14 +95,19 @@ function PatternCard({ pattern: p, onChanged }: { pattern: PatternView; onChange
       {p.improvementStrategy && (
         <div className="strategy"><strong>훈련 제안</strong><br />{p.improvementStrategy}</div>
       )}
+      {p.improvedCount > 0 && (
+        <p className={`trend trend-${p.trend.toLowerCase()}`} role="status">
+          {TREND_LABEL[p.trend]} <span className="muted small">· 개선 신호 {p.improvedCount}개 (신뢰도에는 반영하지 않습니다)</span>
+        </p>
+      )}
 
       {p.evidence.length > 0 && (
         <details>
-          <summary>근거 보기 ({p.evidence.length})</summary>
+          <summary>최근 근거 보기 ({p.evidence.length}개, 개선 신호 포함)</summary>
           <ul className="evidence">
             {p.evidence.map((e) => (
-              <li key={`${e.source}-${e.itemId}-${e.quote}`}>
-                <div className="muted small">{e.label}</div>
+              <li key={`${e.source}-${e.itemId}-${e.quote}`} className={e.kind === 'IMPROVED' ? 'improved' : ''}>
+                <div className="muted small">{e.kind === 'IMPROVED' ? '✅ 개선 신호 · ' : ''}{e.label}</div>
                 <blockquote>“{e.quote}”</blockquote>
                 {e.note && <div className="muted small">{e.note}</div>}
               </li>

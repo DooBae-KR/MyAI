@@ -1,5 +1,6 @@
 package com.personal.ai.data.learning;
 
+import com.personal.ai.core.learning.EvidenceKind;
 import com.personal.ai.data.codingtest.CodingSubmission;
 import jakarta.persistence.*;
 
@@ -27,6 +28,10 @@ public class PatternEvidence {
     @JoinColumn(name = "SUBMISSION_ID")
     private CodingSubmission submission;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private EvidenceKind kind = EvidenceKind.OBSERVED;
+
     /** 답변에서 그대로 인용한 부분. 실제 답변에 있는 문장임을 서비스가 검증한 뒤 저장한다. */
     @Column(nullable = false, length = 1000)
     private String quote;
@@ -52,6 +57,13 @@ public class PatternEvidence {
         return evidence;
     }
 
+    /** 개선 신호로 표시한다(기본은 관찰 근거). */
+    public PatternEvidence improved() {
+        this.kind = EvidenceKind.IMPROVED;
+        return this;
+    }
+
+    public EvidenceKind getKind() { return kind; }
     public Long getId() { return id; }
     public ThinkingPattern getPattern() { return pattern; }
     public LearningAnswer getAnswer() { return answer; }

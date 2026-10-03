@@ -12,6 +12,10 @@ public interface PatternEvidenceRepository extends JpaRepository<PatternEvidence
 
     int countByPatternId(Long patternId);
 
+    /** 신뢰도 계산용: 개선 신호는 빼고 관찰 근거만 센다. */
+    int countByPatternIdAndKind(Long patternId, com.personal.ai.core.learning.EvidenceKind kind);
+
+
     /** 근거의 출처(답변 또는 코딩 풀이와 그 문제 제목)를 화면에 보여 주려고 함께 가져온다. */
     @EntityGraph(attributePaths = {"answer", "submission", "submission.problem"})
     List<PatternEvidence> findTop5ByPatternIdOrderByIdDesc(Long patternId);

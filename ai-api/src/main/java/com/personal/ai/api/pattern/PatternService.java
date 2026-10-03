@@ -9,6 +9,7 @@ import com.personal.ai.agent.evaluator.DiagnosticQuiz;
 import com.personal.ai.agent.pattern.*;
 import com.personal.ai.api.learning.LlmCalls;
 import com.personal.ai.api.pattern.PatternDtos.*;
+import com.personal.ai.core.learning.EvidenceKind;
 import com.personal.ai.core.learning.PatternStatus;
 import com.personal.ai.data.codingtest.CodingProblem;
 import com.personal.ai.data.codingtest.CodingSubmission;
@@ -59,12 +60,12 @@ public class PatternService {
         List<LearningAnswer> answerBatch = answers.findTop30ByAnalyzedAtIsNullOrderByIdAsc();
         List<CodingSubmission> submissionBatch = submissions.findTop10ByAnalyzedAtIsNullOrderByIdAsc();
         if (answerBatch.isEmpty() && submissionBatch.isEmpty()) {
-            return new AnalysisResponse(0, 0, 0, 0, "새로 분석할 답변이나 코딩 풀이가 없습니다. 진단 답변이나 코딩 풀이가 쌓이면 다시 분석하세요.");
+            return new AnalysisResponse(0, 0, 0, 0, 0, "새로 분석할 답변이나 코딩 풀이가 없습니다. 진단 답변이나 코딩 풀이가 쌓이면 다시 분석하세요.");
         }
 
         List<ThinkingPattern> existing = patterns.findAll();
         List<KnownPattern> known = existing.stream().filter(p -> p.getStatus() != PatternStatus.DISMISSED)
-                .map(p -> new KnownPattern(p.getName(), p.getDescription())).toList();
+                .map(p -> new KnownPattern(p.getName(), p.getDescription(), p.getImprovementStrategy())).toList();
         List<String> dismissed = existing.stream().filter(p -> p.getStatus() == PatternStatus.DISMISSED)
                 .map(ThinkingPattern::getName).toList();
 
@@ -72,16 +73,19 @@ public class PatternService {
         submissionBatch.forEach(s -> items.add(submissionItem(s)));
         PatternAnalysis analysis = LlmCalls.run(() -> agent.analyze(items, known, dismissed));
 
-        int[] counts = new int[2]; // [새 패턴, 갱신된 패턴]
+        int[] counts = new int[3]; // [새 패턴, 갱신된 패턴, 기록한 개선 신호]
         tx.executeWithoutResult(status -> {
             for (PatternObservation obs : analysis.observations()) {
                 apply(obs, counts);
+            }
+            for (PatternImprovement imp : analysis.improvements()) {
+                applyImprovement(imp, counts);
             }
             answerBatch.forEach(a -> answers.getReferenceById(a.getId()).markAnalyzed());
             submissionBatch.forEach(s -> submissions.getReferenceById(s.getId()).markAnalyzed());
             recompute();
         });
-        return new AnalysisResponse(answerBatch.size(), submissionBatch.size(), counts[0], counts[1], null);
+        return new AnalysisResponse(answerBatch.size(), submissionBatch.size(), counts[0], counts[1], counts[2], null);
     }
 
     public List<PatternView> list() {
@@ -124,39 +128,56 @@ public class PatternService {
         }
         pattern.observedNow();
         for (PatternEvidenceItem item : obs.evidence()) {
-            saveEvidence(pattern, item);
+            saveEvidence(pattern, item, false);
+        }
+    }
+
+    /** 개선 신호는 관찰 근거가 아니므로 마지막 관찰 시각과 신뢰도에는 영향을 주지 않는다. 기각된 패턴이나 이미 근거로 쓴 항목은 건너뛴다. */
+    private void applyImprovement(PatternImprovement imp, int[] counts) {
+        ThinkingPattern pattern = patterns.findByNameIgnoreCase(imp.patternName()).orElse(null);
+        if (pattern == null || pattern.getStatus() == PatternStatus.DISMISSED) {
+            return;
+        }
+        if (saveEvidence(pattern, imp.evidence(), true)) {
+            counts[2]++;
         }
     }
 
     /** itemId는 에이전트가 우리가 준 목록에서만 돌려주므로 "A12" 또는 "S3" 형식이 보장된다. */
-    private void saveEvidence(ThinkingPattern pattern, PatternEvidenceItem item) {
+    private boolean saveEvidence(ThinkingPattern pattern, PatternEvidenceItem item, boolean improved) {
         long id = Long.parseLong(item.itemId().substring(1));
+        PatternEvidence row;
         if (item.itemId().startsWith(SUBMISSION)) {
-            if (!evidence.existsByPatternIdAndSubmissionId(pattern.getId(), id)) {
-                evidence.save(PatternEvidence.fromSubmission(pattern, submissions.getReferenceById(id), item.quote(), item.note()));
-            }
-        } else if (!evidence.existsByPatternIdAndAnswerId(pattern.getId(), id)) {
-            evidence.save(new PatternEvidence(pattern, answers.getReferenceById(id), item.quote(), item.note()));
+            if (evidence.existsByPatternIdAndSubmissionId(pattern.getId(), id)) return false;
+            row = PatternEvidence.fromSubmission(pattern, submissions.getReferenceById(id), item.quote(), item.note());
+        } else {
+            if (evidence.existsByPatternIdAndAnswerId(pattern.getId(), id)) return false;
+            row = new PatternEvidence(pattern, answers.getReferenceById(id), item.quote(), item.note());
         }
+        evidence.save(improved ? row.improved() : row);
+        return true;
     }
 
     /** 분석한 항목(답변 + 코딩 풀이) 수가 늘면 모든 패턴의 비율이 바뀌므로 기각되지 않은 패턴을 전부 다시 계산한다. */
     private void recompute() {
         int total = (int) (answers.countByAnalyzedAtIsNotNull() + submissions.countByAnalyzedAtIsNotNull());
         for (ThinkingPattern p : patterns.findByStatusNot(PatternStatus.DISMISSED)) {
-            int support = evidence.countByPatternId(p.getId());
+            int support = evidence.countByPatternIdAndKind(p.getId(), EvidenceKind.OBSERVED); // 개선 신호는 신뢰도에 넣지 않는다
             p.updateEvidence(support, PatternConfidence.confidence(support, total));
             p.setStatus(PatternConfidence.status(support));
         }
     }
 
     private PatternView view(ThinkingPattern p) {
-        List<Evidence> recent = evidence.findTop5ByPatternIdOrderByIdDesc(p.getId()).stream().map(e ->
+        List<PatternEvidence> latest = evidence.findTop5ByPatternIdOrderByIdDesc(p.getId());
+        List<Evidence> recent = latest.stream().map(e ->
                 e.getSubmission() != null
-                        ? new Evidence("SUBMISSION", e.getSubmission().getId(), "코딩 풀이: " + e.getSubmission().getProblem().getTitle(), e.getQuote(), e.getNote())
-                        : new Evidence("ANSWER", e.getAnswer().getId(), "진단 답변", e.getQuote(), e.getNote())).toList();
+                        ? new Evidence("SUBMISSION", e.getSubmission().getId(), "코딩 풀이: " + e.getSubmission().getProblem().getTitle(), e.getQuote(), e.getNote(), e.getKind().name())
+                        : new Evidence("ANSWER", e.getAnswer().getId(), "진단 답변", e.getQuote(), e.getNote(), e.getKind().name())).toList();
         return new PatternView(p.getId(), p.getName(), p.getDescription(), p.getStatus().name(), p.getConfidence(),
-                p.getEvidenceCount(), p.getFirstObservedAt(), p.getLastObservedAt(), p.getImprovementStrategy(), recent);
+                p.getEvidenceCount(), p.getFirstObservedAt(), p.getLastObservedAt(), p.getImprovementStrategy(),
+                evidence.countByPatternIdAndKind(p.getId(), EvidenceKind.IMPROVED),
+                PatternTrend.of(latest.stream().map(PatternEvidence::getKind).toList()), recent);
     }
 
     /** 답변에 문제 내용과 채점 결과를 붙인다. 진단 문제 JSON은 진단별로 한 번만 읽는다. */

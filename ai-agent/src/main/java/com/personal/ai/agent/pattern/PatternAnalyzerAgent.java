@@ -39,9 +39,15 @@ public class PatternAnalyzerAgent {
 
         Map<String, String> userTexts = items.stream()
                 .collect(Collectors.toMap(AnalysisItem::itemId, a -> normalize(a.answer()), (a, b) -> a));
-        List<PatternObservation> observations = llm.call(prompt, llm.toJson(input), 0.2,
-                root -> parse(root, userTexts, dismissedNames));
-        return new PatternAnalysis(prompt.version(), observations);
+        JsonNode[] lastRoot = new JsonNode[1];
+        List<PatternObservation> observations = llm.call(prompt, llm.toJson(input), 0.2, root -> {
+            List<PatternObservation> parsed = parse(root, userTexts, dismissedNames);
+            lastRoot[0] = root;
+            return parsed;
+        });
+        // 개선 신호는 같은 응답에서 따로 읽는다. 근거 검증을 통과하지 못한 항목은 조용히 버린다(관찰과 달리 재시도하지 않음).
+        List<PatternImprovement> improvements = parseImprovements(lastRoot[0], userTexts, known);
+        return new PatternAnalysis(prompt.version(), observations, improvements);
     }
 
     List<PatternObservation> parse(JsonNode root, Map<String, String> userTexts, List<String> dismissedNames) {
@@ -76,6 +82,30 @@ public class PatternAnalyzerAgent {
             throw new AgentResponseException("근거 인용(quote)이 실제 학습자의 글에 없습니다. quote는 해당 itemId에서 학습자가 쓴 답변, 접근 설명, 코드에서 그대로 가져와야 합니다.");
         }
         return result;
+    }
+
+    static final int MAX_IMPROVEMENTS = 5;
+
+    /** known(기각되지 않은 기존 패턴)에 있는 이름이고 인용이 학습자의 글에 실제로 있는 개선 신호만 남긴다. */
+    List<PatternImprovement> parseImprovements(JsonNode root, Map<String, String> userTexts, List<KnownPattern> known) {
+        List<PatternImprovement> list = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (JsonNode item : root.path("improvements")) {
+            if (list.size() >= MAX_IMPROVEMENTS) {
+                break;
+            }
+            String name = Json.text(item, "patternName").trim();
+            String canonical = known.stream().map(KnownPattern::name).filter(n -> n.equalsIgnoreCase(name)).findFirst().orElse(null);
+            String id = Json.text(item, "itemId").trim();
+            String quote = normalize(Json.text(item, "quote"));
+            String text = userTexts.get(id);
+            if (canonical != null && text != null && quote.length() >= MIN_QUOTE_CHARS && text.contains(quote)
+                    && seen.add(canonical.toLowerCase() + "|" + id)) {
+                list.add(new PatternImprovement(canonical,
+                        new PatternEvidenceItem(id, cap(quote, 300), cap(Json.text(item, "note").trim(), 500))));
+            }
+        }
+        return list;
     }
 
     /** itemId가 분석 대상이고, quote가 그 항목에서 학습자가 쓴 글에 실제로 있는 근거만 남긴다. 한 항목은 한 번만 센다. */

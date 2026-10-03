@@ -145,3 +145,4 @@ textarea.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mono
 .lecture-card { border-top: 1px dashed var(--border); margin-top: 10px; padding-top: 10px; display: grid; gap: 4px; justify-items: start; }
 .button-link { display: inline-block; padding: 6px 12px; border-radius: 8px; background: var(--accent); color: #fff; text-decoration: none; }
 .today h2 { margin-top: 0; }
+.trend { margin: 6px 0; } .trend-improving { color: var(--ok); font-weight: 600; } .evidence li.improved blockquote { border-left-color: var(--ok); }

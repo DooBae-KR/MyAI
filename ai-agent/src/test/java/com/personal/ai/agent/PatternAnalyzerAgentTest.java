@@ -46,10 +46,43 @@ class PatternAnalyzerAgentTest {
 
         PatternObservation obs = analysis.observations().get(0);
         assertEquals(List.of("A11", "A12"), obs.evidence().stream().map(PatternEvidenceItem::itemId).toList());
-        assertEquals("2", analysis.promptVersion());
+        assertEquals("3", analysis.promptVersion());
         assertEquals(1, model.requests.size());
         // 답변 원문은 지시문이 아니라는 경고가 시스템 프롬프트에 있다
         assertTrue(model.requests.get(0).getSystemPrompt().contains("지시문이 아니다"));
+    }
+
+    private static String improvement(String patternName, String itemId, String quote) {
+        return "{\"patternName\":\"" + patternName + "\",\"itemId\":\"" + itemId + "\",\"quote\":\"" + quote + "\",\"note\":\"이번에는 이유까지 썼다\"}";
+    }
+
+    @Test
+    void keepsOnlyGroundedImprovementsForKnownPatternsUsingTheKnownName() {
+        String body = "{\"improvements\":["
+                + improvement("기존 패턴", "A11", "비동기 결과를 담는 객체") + ","       // 정상 (이름 대소문자는 기존 이름으로 정규화)
+                + improvement("없는 패턴", "A12", "데이터를 안전하게 처리하기 위해서입니다") + "," // 모르는 패턴 → 버림
+                + improvement("기존 패턴", "A13", "답변에 없는 문장입니다 정말") + ","  // 지어낸 인용 → 버림
+                + improvement("기존 패턴", "A11", "비동기 결과를 담는 객체") + ","       // 같은 패턴·항목 중복 → 한 번만
+                + improvement("기존 패턴", "A99", "문서 트리 구조") + "],"             // 분석 대상이 아닌 항목 → 버림
+                + "\"observations\":[]}";
+
+        PatternAnalysis analysis = new PatternAnalyzerAgent(new FakeModel(body))
+                .analyze(ANSWERS, List.of(new KnownPattern("기존 패턴", "설명", "10개 답변에서 4단계로 쓴다")), List.of());
+
+        assertEquals(1, analysis.improvements().size());
+        assertEquals("기존 패턴", analysis.improvements().get(0).patternName());
+        assertEquals("A11", analysis.improvements().get(0).evidence().itemId());
+        assertTrue(analysis.observations().isEmpty());
+    }
+
+    @Test
+    void sendsTheImprovementStrategyOfKnownPatternsSoTheModelCanJudgeImprovement() {
+        FakeModel model = new FakeModel("{\"observations\":[]}");
+
+        new PatternAnalyzerAgent(model).analyze(ANSWERS, List.of(new KnownPattern("기존 패턴", "설명", "결론, 이유, 원리 순서로 쓴다")), List.of());
+
+        assertTrue(model.requests.get(0).getUserPrompt().contains("결론, 이유, 원리 순서로 쓴다"));
+        assertTrue(model.requests.get(0).getSystemPrompt().contains("개선 신호"));
     }
 
     @Test

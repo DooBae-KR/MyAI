@@ -185,12 +185,15 @@ export interface PatternView {
   firstObservedAt: string
   lastObservedAt: string
   improvementStrategy: string | null
-  evidence: { source: 'ANSWER' | 'SUBMISSION'; itemId: number; label: string; quote: string; note: string | null }[]
+  improvedCount: number
+  trend: 'NONE' | 'MIXED' | 'IMPROVING'
+  evidence: { source: 'ANSWER' | 'SUBMISSION'; itemId: number; label: string; quote: string; note: string | null; kind: 'OBSERVED' | 'IMPROVED' }[]
 }
 
 export interface PatternAnalysis {
   analyzedAnswers: number
   analyzedSubmissions: number
+  improvements: number
   newPatterns: number
   updatedPatterns: number
   message: string | null
