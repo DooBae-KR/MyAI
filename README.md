@@ -381,6 +381,8 @@ POST /api/learning/steps/{stepId}/lesson[?refresh=true]   저장된 자료가 �
    ```
    소유자 비밀번호는 서버 `.env`에만 두고, 로컬 개발용과 서버용 계정을 나누면 더 안전합니다.
 - 확인된 것: 앱 계정으로 조회·저장은 되고, `DELETE`/`DROP`/`ALTER`/`CREATE`는 `permission denied`입니다(로컬 Postgres 16).
+- 같은 Supabase 프로젝트를 **다른 앱과 공유**해도 안전합니다. 이 역할은 `personal_ai` 스키마의 `SELECT/INSERT/UPDATE`만 갖고, `public` 등 다른 스키마의 테이블은 읽을 수도 없습니다(운영 프로젝트에서 확인). Supabase API(`anon`/`authenticated`)는 `personal_ai`에 권한이 없어 접근할 수 없으므로, 이 스키마에는 RLS를 켤 필요가 없습니다. 켜면 오히려 정책 없이는 앱 계정까지 막힙니다.
+- 비밀번호는 만들 때 정하지 않았다면(예: 이미 역할만 만든 경우) Supabase SQL Editor에서 `ALTER ROLE personal_ai_app PASSWORD '<직접 정한 값>';`로 정하세요. 비밀번호는 채팅에 붙여넣지 마세요.
 - 앱 계정만 설정하고 `DB_MIGRATION_*`를 빼면 새 마이그레이션이 있는 버전으로 올릴 때 Flyway가 권한 오류로 멈춥니다.
 
 ## 오늘의 학습·오늘의 특강

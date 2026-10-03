@@ -15,6 +15,12 @@ GRANT USAGE ON SCHEMA personal_ai TO personal_ai_app;
 
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA personal_ai TO personal_ai_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA personal_ai TO personal_ai_app;
+-- Flyway 이력 테이블은 마이그레이션 계정만 다룬다(앱이 이력을 고칠 수 있으면 안 된다).
+DO $$ BEGIN
+    IF to_regclass('personal_ai.flyway_schema_history') IS NOT NULL THEN
+        REVOKE ALL ON personal_ai.flyway_schema_history FROM personal_ai_app;
+    END IF;
+END $$;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA personal_ai GRANT SELECT, INSERT, UPDATE ON TABLES TO personal_ai_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA personal_ai GRANT USAGE, SELECT ON SEQUENCES TO personal_ai_app;
