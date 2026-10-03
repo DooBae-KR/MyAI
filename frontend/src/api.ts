@@ -200,6 +200,12 @@ export interface Stats {
   reviews: { goalId: number; subject: string; stepId: number; seq: number; title: string; lastScore: number | null; daysAgo: number | null }[]
 }
 
+export interface Today {
+  todos: { kind: string; label: string; link: string; done: boolean }[]
+  lecture: { problemId: number; title: string; reason: string } | null
+}
+export const fetchToday = () => request<Today>('/api/today')
+
 export const fetchStats = () => request<Stats>('/api/stats')
 
 export const fetchPatterns = () => request<PatternView[]>('/api/learning/patterns')

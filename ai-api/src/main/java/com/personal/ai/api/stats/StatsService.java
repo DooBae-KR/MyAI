@@ -93,6 +93,12 @@ public class StatsService {
                 trends(), weakAreas(), reviews(today));
     }
 
+    /** 보충 필요 Step(점수가 낮은 순). 오늘의 학습에서도 쓴다. */
+    @Transactional(readOnly = true)
+    public List<StatsResponse.Review> reviews() {
+        return reviews(LocalDate.now(clock));
+    }
+
     /** 보충 필요 Step을 점수가 낮은 순으로. 점수를 모르면(채점 기록 없음) 뒤로 보낸다. */
     private List<StatsResponse.Review> reviews(LocalDate today) {
         return steps.findByStatusOrderByGoalIdAscSeqAsc(StepStatus.REVIEW_REQUIRED).stream().map(st -> {

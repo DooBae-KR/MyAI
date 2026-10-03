@@ -4,6 +4,7 @@ import { useAction, useHashRoute, useLoad } from './hooks'
 import { LEVEL_LABEL, PROVIDER_LABEL, STATUS_LABEL, difficultyDots, formatMinutes, modelName, scoreTone } from './labels'
 import { NewGoalForm } from './NewGoalForm'
 import { LessonPanel } from './LessonPanel'
+import { TodayPanel } from './TodayPanel'
 import { AnswerForm, NextActionPanel } from './NextActionPanel'
 import { CodingPage, ProblemPage } from './CodingPage'
 import { PatternsPage } from './PatternsPage'
@@ -59,6 +60,7 @@ function GoalList() {
   return (
     <>
       <h1>내 학습 목표</h1>
+      {data.length > 0 && <TodayPanel />}
       <details className="new-goal" open={data.length === 0}>
         <summary>{data.length === 0 ? '첫 학습 목표를 등록하세요' : '+ 새 목표 추가'}</summary>
         <NewGoalForm />

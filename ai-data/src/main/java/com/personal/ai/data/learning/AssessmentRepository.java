@@ -17,6 +17,10 @@ public interface AssessmentRepository extends JpaRepository<Assessment, Long> {
     @EntityGraph(attributePaths = {"goal", "goal.subject"})
     List<Assessment> findByTypeAndResultIsNotNullOrderByIdAsc(AssessmentType type);
 
+    /** 오늘의 학습용: 해당 시각 이후 만들어진 채점 완료 평가(Step, 목표 포함). */
+    @EntityGraph(attributePaths = {"step", "goal", "goal.subject"})
+    List<Assessment> findByTypeAndCreatedAtGreaterThanEqualAndResultIsNotNullOrderByIdAsc(AssessmentType type, java.time.LocalDateTime since);
+
     /** Step의 가장 최근 평가(채점 여부 무관). 풀다 만 문제를 이어서 풀게 하려고 쓴다. */
     Optional<Assessment> findFirstByStepIdAndTypeOrderByIdDesc(Long stepId, AssessmentType type);
 
